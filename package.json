@@ -24,5 +24,8 @@
     "rollup-plugin-terser": "^7.0.0",
     "svelte": "^3.0.0",
     "sirv-cli": "^1.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
