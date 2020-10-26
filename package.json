@@ -1,6 +1,6 @@
 {
   "name": "@beyondnft/sandbox",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "svelte": "src/main.js",
   "module": "dist/nftsandbox.es.min.js",
   "main": "dist/nftsandbox.umd.min.js",
