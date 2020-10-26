@@ -1,13 +1,8 @@
 {
   "name": "@beyondnft/sandbox",
   "version": "0.0.1",
-  "svelte": "src/main.js",
   "module": "dist/nftsandbox.es.min.js",
   "main": "dist/nftsandbox.umd.min.js",
-  "files": [
-    "./dist",
-    "./src"
-  ],
   "scripts": {
     "build": "npm run srcdoc && rollup -c",
     "dev": "npm run srcdoc && rollup -c -w",
