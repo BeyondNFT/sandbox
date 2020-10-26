@@ -82,15 +82,16 @@
     const props = {};
     if (json.interactive_nft) {
       if (Array.isArray(json.interactive_nft.properties)) {
-        // default props
-        for (const prop of json.interactive_nft.properties) {
-          props[prop.name] = prop.value;
+        let overrider = {};
+        if (owner_properties && 'object' === typeof owner_properties) {
+          overrider = owner_properties;
         }
 
-        // current owner props overriding default props
-        if (owner_properties && 'object' === typeof owner_properties) {
-          for (const propName in owner_properties) {
-            props[propName] = owner_properties[propName];
+        // no Object.assign because we only want declared props to be set
+        for (const prop of json.interactive_nft.properties) {
+          props[prop.name] = prop.value;
+          if (undefined !== overrider[prop.name]) {
+            props[prop.name] = overrider[prop.name];
           }
         }
       }
@@ -175,6 +176,7 @@
     border: none;
     width: 100%;
     height: 100%;
+    position: relative;
   }
 
   iframe {
@@ -188,15 +190,26 @@
     filter: grayscale(50%) blur(1px);
     opacity: 0.25;
   }
+
+  .beyondnft__sandbox__error {
+    font-size: 0.9em;
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 5px;
+  }
 </style>
 
-<!--
--->
 <div class="beyondnft__sandbox">
   <iframe
     title="Sandbox"
     bind:this={iframe}
     sandbox={`allow-scripts allow-pointer-lock allow-popups ${sandbox_props}`}
-    class={error || pending || pending_imports ? 'greyed-out' : ''}
+    class:greyed-out={error || pending || pending_imports}
     srcdoc={replaceCode(srcdoc)} />
+  {#if error}
+    <strong class="beyondnft__sandbox__error">
+      <em>Sorry, an error occured while executing the NFT.</em>
+    </strong>
+  {/if}
 </div>

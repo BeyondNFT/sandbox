@@ -4,11 +4,13 @@
 
 This project is the open source Sandbox for loading and viewing Interactive NFTs.
 
-If you're just looking to easily embed NFTs, you might be looking for the [BeyondNFT/embeddable](https://github.com/BeyondNFT/embeddable) project. This project is more an "in deep" presentation of what are Interactive NFTs and how they work.
+If you're just looking to easily embed NFTs, you might be looking for the [BeyondNFT/embeddable](https://github.com/BeyondNFT/embeddable) project.
 
 The Sandbox has no idea about the existence of the Blockchain (it works with JSON already loaded), when [BeyondNFT/embeddable](https://github.com/BeyondNFT/embeddable) makes direct calls to the smart contracts to get all the data needed.
 
-This is the good place to see [the end schema](#usage) of InteractiveNFT's JSON, which can guide platforms into creating their own Sandbox if they do not trust this one.
+This Sandbox project is more an "in deep" presentation of what are Interactive NFTs and how they work.
+
+This is the good place to see [the end schema](#usage) of InteractiveNFT's JSON, which can guide platforms into creating their own Sandbox if they do not trust this one. (you could for example run the NFTs in an iframe that you host on a subdomain of your website if srcdoc iframes are not your thing)
 
 ## "Glossary"
 
@@ -25,16 +27,15 @@ As a **Creator** or an **Owner**, you should probably never have to edit any of 
 
 If like me, you prefer reading code with comments better than long walls of text, just [jump to Usage](#usage)
 
-
 ## Descriptions
 
 ### Interactive NFTs
 
 Interactive NFT is a project that aims to:
 - Allow NFTs to be non static and/or interactives to the **Viewer** (procedural art with js, html, external data call, music player, video player...).
-- Allow a **Creator** to declare some values "configurable/variables" and an **Owner** to configure those values, making the NFT evolve.
+- Allow a **Creator** to declare some values "configurable/variables" and an **Owner** to configure those values, making the NFT evolve. (a bit like Async, but because the NFT is code running, it can go much deeper)
 
-This way, an Artist could for example create a procedural piece of art, and allow the futur **Owners** to set some key values used during the art rendering, thus making the Art evolutive.
+This way, an Artist could for example create a procedural piece of art, and allow the future **Owners** to set some key values used during the art rendering, thus making the Art evolutive.
 The **Owner** could for example edit colors, animation durations, texts, textures or anything that the **Creator** declared as editable.
 
 Another example would be a Card on which the **Viewer** could click; the card would then flip and present its attributes (that are stored in the NFT's JSON or even retrieven with an ajax call). All this directly in a Gallery / Website / Marketplace.
@@ -366,7 +367,7 @@ const sandbox = new SandBox({
 });
 ```
 
-## External Events
+## Events
 
 The Sandbox dispatch events to let you know what happens inside.
 You can listen to those events using `sandboxnInstance.$on(eventName, fn)`
@@ -392,15 +393,22 @@ Therefore, if you use this Sandbox on your website, before the first rendering i
 
 Feel free to help develop or correct bug as this is highly POC for the moment.
 
-The sandbox is created using [Svelte](http://svelte.dev) (because... what else?).
+The Sandbox is created using [Svelte](http://svelte.dev) (because... what else?).
 
 `npm run build` to build the Sandbox code
 
 `npm run dev` to edit with a watch (autoreload and so on).
 
-`npm run srcdoc` after modifying [the iframe html](./src/Output/srcdoc/index.html) in dev mode (automatically done before a build)
+`npm run srcdoc` need to be run after modifying [the iframe html](./src/Output/srcdoc/index.html) in dev mode (automatically done before a build)
 
 `npm run start` will serve the files under public, which let you play a bit with the Sandbox if you edit [./public/index.html](./public/index.html)
+
+## Errors
+
+The Sandbox will dispatch [event](#events) in case of an error occuring in the iframe.
+It will also show a message to the **Viewer** and blur the Sandbox.
+
+TODO: Make this configurable with a prop `showerror`?
 
 ## ERC721Configurable
 
@@ -410,7 +418,7 @@ Basic ERC721Configurable methods
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.0;
 
-contract ERC721Configurable {
+abstract contract ERC721Configurable {
     // map of tokenId => interactiveConfURI.
     mapping(uint256 => string) private _interactiveConfURIs;
 

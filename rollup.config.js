@@ -5,7 +5,10 @@ import livereload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
 import pkg from './package.json';
 
-const name = pkg.name;
+const name = pkg.name
+  .replace(/^(@\S+\/)?(beyondnft)?(\S+)/, '$3')
+  .replace(/^\w/, (m) => m.toUpperCase())
+  .replace(/-\w/g, (m) => m[1].toUpperCase());
 
 const production = !process.env.ROLLUP_WATCH;
 
@@ -34,21 +37,24 @@ function serve() {
   };
 }
 const output = [
-  { file: 'dist/' + pkg.module, format: 'es' },
-  { file: 'dist/' + pkg.main, format: 'umd', name },
+  { file: pkg.module.replace('.min.js', '.js'), format: 'es' },
+  { file: pkg.main.replace('.min.js', '.js'), format: 'umd', name },
 ];
 
 if (!production) {
-  output.push({ file: 'public/dist/' + pkg.module, format: 'es' });
+  output.push({
+    file: 'public/' + pkg.module.replace('.min.js', '.js'),
+    format: 'es',
+  });
 } else {
   output.push(
     {
-      file: 'dist/' + pkg.module.replace('.js', '.min.js'),
+      file: pkg.module,
       format: 'es',
       plugins: [production && terser()],
     },
     {
-      file: 'dist/' + pkg.main.replace('.js', '.min.js'),
+      file: pkg.main,
       format: 'umd',
       name,
       plugins: [production && terser()],
@@ -60,17 +66,8 @@ export default {
   output,
   plugins: [
     svelte({
-      // enable run-time checks when not in production
       dev: !production,
-      // we'll extract any component CSS out into
-      // a separate file - better for performance
     }),
-
-    // If you have external dependencies installed from
-    // npm, you'll most likely need these plugins. In
-    // some cases you'll need additional configuration -
-    // consult the documentation for details:
-    // https://github.com/rollup/plugins/tree/master/packages/commonjs
     resolve({
       browser: true,
       dedupe: ['svelte'],

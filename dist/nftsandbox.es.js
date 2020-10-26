@@ -17,9 +17,6 @@ function safe_not_equal(a, b) {
 function is_empty(obj) {
     return Object.keys(obj).length === 0;
 }
-function null_to_empty(value) {
-    return value == null ? '' : value;
-}
 
 function append(target, node) {
     target.appendChild(node);
@@ -36,6 +33,9 @@ function element(name) {
 function text(data) {
     return document.createTextNode(data);
 }
+function space() {
+    return text(' ');
+}
 function empty() {
     return text('');
 }
@@ -47,6 +47,9 @@ function attr(node, attribute, value) {
 }
 function children(element) {
     return Array.from(element.childNodes);
+}
+function toggle_class(element, name, toggle) {
+    element.classList[toggle ? 'add' : 'remove'](name);
 }
 function custom_event(type, detail) {
     const e = document.createEvent('CustomEvent');
@@ -464,46 +467,76 @@ function scriptify(script) {
 
 function add_css() {
 	var style = element("style");
-	style.id = "svelte-1m9ir7p-style";
-	style.textContent = ".beyondnft__sandbox.svelte-1m9ir7p{background-color:white;border:none;width:100%;height:100%}iframe.svelte-1m9ir7p{width:100%;height:100%;border:none;display:block}.greyed-out.svelte-1m9ir7p{filter:grayscale(50%) blur(1px);opacity:0.25}";
+	style.id = "svelte-1bwdt9k-style";
+	style.textContent = ".beyondnft__sandbox.svelte-1bwdt9k{background-color:white;border:none;width:100%;height:100%;position:relative}iframe.svelte-1bwdt9k{width:100%;height:100%;border:none;display:block}.greyed-out.svelte-1bwdt9k{filter:grayscale(50%) blur(1px);opacity:0.25}.beyondnft__sandbox__error.svelte-1bwdt9k{font-size:0.9em;position:absolute;top:0;left:0;padding:5px}";
 	append(document.head, style);
+}
+
+// (210:2) {#if error}
+function create_if_block(ctx) {
+	let strong;
+
+	return {
+		c() {
+			strong = element("strong");
+			strong.innerHTML = `<em>Sorry, an error occured while executing the NFT.</em>`;
+			attr(strong, "class", "beyondnft__sandbox__error svelte-1bwdt9k");
+		},
+		m(target, anchor) {
+			insert(target, strong, anchor);
+		},
+		d(detaching) {
+			if (detaching) detach(strong);
+		}
+	};
 }
 
 function create_fragment(ctx) {
 	let div;
 	let iframe_1;
 	let iframe_1_sandbox_value;
-	let iframe_1_class_value;
 	let iframe_1_srcdoc_value;
+	let t;
+	let if_block = /*error*/ ctx[3] && create_if_block();
 
 	return {
 		c() {
 			div = element("div");
 			iframe_1 = element("iframe");
+			t = space();
+			if (if_block) if_block.c();
 			attr(iframe_1, "title", "Sandbox");
 			attr(iframe_1, "sandbox", iframe_1_sandbox_value = `allow-scripts allow-pointer-lock allow-popups ${/*sandbox_props*/ ctx[0]}`);
-
-			attr(iframe_1, "class", iframe_1_class_value = "" + (null_to_empty(/*error*/ ctx[3] || pending || /*pending_imports*/ ctx[2]
-			? "greyed-out"
-			: "") + " svelte-1m9ir7p"));
-
 			attr(iframe_1, "srcdoc", iframe_1_srcdoc_value = /*replaceCode*/ ctx[4](srcdoc));
-			attr(div, "class", "beyondnft__sandbox svelte-1m9ir7p");
+			attr(iframe_1, "class", "svelte-1bwdt9k");
+			toggle_class(iframe_1, "greyed-out", /*error*/ ctx[3] || pending || /*pending_imports*/ ctx[2]);
+			attr(div, "class", "beyondnft__sandbox svelte-1bwdt9k");
 		},
 		m(target, anchor) {
 			insert(target, div, anchor);
 			append(div, iframe_1);
 			/*iframe_1_binding*/ ctx[9](iframe_1);
+			append(div, t);
+			if (if_block) if_block.m(div, null);
 		},
 		p(ctx, [dirty]) {
 			if (dirty & /*sandbox_props*/ 1 && iframe_1_sandbox_value !== (iframe_1_sandbox_value = `allow-scripts allow-pointer-lock allow-popups ${/*sandbox_props*/ ctx[0]}`)) {
 				attr(iframe_1, "sandbox", iframe_1_sandbox_value);
 			}
 
-			if (dirty & /*error, pending_imports*/ 12 && iframe_1_class_value !== (iframe_1_class_value = "" + (null_to_empty(/*error*/ ctx[3] || pending || /*pending_imports*/ ctx[2]
-			? "greyed-out"
-			: "") + " svelte-1m9ir7p"))) {
-				attr(iframe_1, "class", iframe_1_class_value);
+			if (dirty & /*error, pending, pending_imports*/ 12) {
+				toggle_class(iframe_1, "greyed-out", /*error*/ ctx[3] || pending || /*pending_imports*/ ctx[2]);
+			}
+
+			if (/*error*/ ctx[3]) {
+				if (if_block) ; else {
+					if_block = create_if_block();
+					if_block.c();
+					if_block.m(div, null);
+				}
+			} else if (if_block) {
+				if_block.d(1);
+				if_block = null;
 			}
 		},
 		i: noop,
@@ -511,6 +544,7 @@ function create_fragment(ctx) {
 		d(detaching) {
 			if (detaching) detach(div);
 			/*iframe_1_binding*/ ctx[9](null);
+			if (if_block) if_block.d();
 		}
 	};
 }
@@ -593,15 +627,18 @@ function instance($$self, $$props, $$invalidate) {
 
 		if (json.interactive_nft) {
 			if (Array.isArray(json.interactive_nft.properties)) {
-				// default props
-				for (const prop of json.interactive_nft.properties) {
-					props[prop.name] = prop.value;
+				let overrider = {};
+
+				if (owner_properties && "object" === typeof owner_properties) {
+					overrider = owner_properties;
 				}
 
-				// current owner props overriding default props
-				if (owner_properties && "object" === typeof owner_properties) {
-					for (const propName in owner_properties) {
-						props[propName] = owner_properties[propName];
+				// no Object.assign because we only want declared props to be set
+				for (const prop of json.interactive_nft.properties) {
+					props[prop.name] = prop.value;
+
+					if (undefined !== overrider[prop.name]) {
+						props[prop.name] = overrider[prop.name];
 					}
 				}
 			}
@@ -713,7 +750,7 @@ function instance($$self, $$props, $$invalidate) {
 class Viewer extends SvelteComponent {
 	constructor(options) {
 		super();
-		if (!document.getElementById("svelte-1m9ir7p-style")) add_css();
+		if (!document.getElementById("svelte-1bwdt9k-style")) add_css();
 
 		init(this, options, instance, create_fragment, safe_not_equal, {
 			code: 6,
@@ -747,7 +784,7 @@ function create_else_block(ctx) {
 }
 
 // (49:0) {#if code}
-function create_if_block(ctx) {
+function create_if_block$1(ctx) {
 	let viewer;
 	let updating_proxy;
 	let current;
@@ -815,7 +852,7 @@ function create_fragment$1(ctx) {
 	let if_block;
 	let if_block_anchor;
 	let current;
-	const if_block_creators = [create_if_block, create_else_block];
+	const if_block_creators = [create_if_block$1, create_else_block];
 	const if_blocks = [];
 
 	function select_block_type(ctx, dirty) {
