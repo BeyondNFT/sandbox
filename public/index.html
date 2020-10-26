@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>BeyondNFT - Sandbox Example</title>
+    <style>
+      html,
+      body,
+      .app {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="app"></div>
+    <script type="module">
+      import NftSandbox from './dist/nftsandbox.es.js';
+
+      document.cookie = 'name=sandbox';
+      const sandbox = new NftSandbox({
+        target: document.querySelector('.app'),
+        props: {
+          // NFT Json
+          data: {
+            name: 'NFT #1',
+            description: 'yes.',
+            attributes: {
+              generation: 'p5js',
+            },
+            interactive_nft: {
+              // here is local, but in real world should be hosted an IPFS (or else)
+              code_uri: './code.html',
+              dependencies: [
+                {
+                  url:
+                    'https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.1.9/p5.min.js',
+                  type: 'script',
+                },
+              ],
+              properties: [
+                {
+                  name: 'color',
+                  type: 'string',
+                  value: '#ffffff',
+                },
+              ],
+            },
+          },
+          owner_properties: {
+            color: 'blue',
+          },
+        },
+      });
+
+      sandbox.$on('error', (e) => {
+        console.log('#### error in Sandbox');
+        console.log(e);
+      });
+
+      sandbox.$on('loaded', async () => {
+        console.log('### Sandbox loaded');
+      });
+    </script>
+  </body>
+</html>

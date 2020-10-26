@@ -1,0 +1,28 @@
+{
+  "name": "@beyondnft/sandbox",
+  "version": "0.0.1",
+  "svelte": "src/main.js",
+  "module": "nftsandbox.es.min.js",
+  "main": "nftsandbox.umd.min.js",
+  "files": [
+    "./dist"
+  ],
+  "scripts": {
+    "build": "npm run srcdoc && rollup -c",
+    "dev": "npm run srcdoc && rollup -c -w",
+    "start": "sirv public --no-clear",
+    "srcdoc": "node scripts/build-srcdoc.js"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^14.0.0",
+    "@rollup/plugin-node-resolve": "^8.0.0",
+    "rollup": "^2.3.4",
+    "rollup-plugin-livereload": "^2.0.0",
+    "rollup-plugin-svelte": "^6.0.0",
+    "rollup-plugin-terser": "^7.0.0",
+    "svelte": "^3.0.0"
+  },
+  "dependencies": {
+    "sirv-cli": "^1.0.0"
+  }
+}

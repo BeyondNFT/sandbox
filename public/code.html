@@ -1,0 +1,46 @@
+<style>
+  body {
+    font-family: Cantarell, 'Helvetica Neue', sans-serif;
+  }
+  h1 {
+    color: red;
+  }
+</style>
+<h1>How to show values</h1>
+<dl>
+  <dt>NFT name (window.context.nft_json.name)</dt>
+  <dd class="name"></dd>
+  <dt>Owner defined color (window.context.properties.color)</dt>
+  <dd class="color"></dd>
+  <dt>Attributes:</dt>
+  <dd>
+    <ul class="attributes"></ul>
+  </dd>
+  <dt>p5js canvas:</dt>
+</dl>
+<script type="text/javascript">
+  document.querySelector('.name').innerText = window.context.nft_json.name;
+
+  const $attributes = document.querySelector('.attributes');
+  const attributes = window.context.nft_json.attributes;
+  Object.keys(attributes).forEach((attr) => {
+    const $li = document.createElement('li');
+    $li.innerHTML = `<strong>${attr}</strong>: ${attributes[attr]}`;
+    $attributes.appendChild($li);
+  });
+
+  document.querySelector('.color').innerText = window.context.properties.color;
+
+  // example of p5js
+  function setup() {
+    createCanvas(500, 200);
+  }
+
+  function draw() {
+    background(window.context.properties.color);
+    noLoop();
+  }
+
+  // Uncomment to throw error because accessing cookie is insecure
+  // console.log(document.cookie);
+</script>
