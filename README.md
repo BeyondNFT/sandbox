@@ -1,16 +1,16 @@
-# BeyondNFT - Interactive NFT Sandbox
+# BeyondNFT - Dynamic NFT Sandbox
 
-*This was developed for the Untitled NFT Hackaton while working on a safe and hopefully in the future standard way to create interactive NFTs.*
+*This was developed for the Untitled NFT Hackaton while working on a safe and hopefully in the future standard way to create Dynamic/Interactive NFTs.*
 
-This project is the open source Sandbox for loading and viewing Interactive NFTs.
+This project is the open source Sandbox for executing and viewing Dynamic NFTs.
 
 If you're just looking to easily embed NFTs, you might be looking for the [BeyondNFT/embeddable](https://github.com/BeyondNFT/embeddable) project.
 
 The Sandbox has no idea about the existence of the Blockchain (it works with JSON already loaded), when [BeyondNFT/embeddable](https://github.com/BeyondNFT/embeddable) makes direct calls to the smart contracts to get all the data needed.
 
-This Sandbox project is more an "in deep" presentation of what are Interactive NFTs and how they work.
+This Sandbox project is more an "in deep" presentation of what are Dynamic NFTs and how they work.
 
-This is the good place to see [the end schema](#usage) of InteractiveNFT's JSON, which can guide platforms into creating their own Sandbox if they do not trust this one. (you could for example run the NFTs in an iframe that you host on a subdomain of your website if srcdoc iframes are not your thing)
+This is the good place to see [the end schema](#usage) of DynamicNFT's JSON, which can guide platforms into creating their own Sandbox if they do not trust this one. (you could for example run the NFTs in an iframe that you host on a subdomain of your website if srcdoc iframes are not your thing)
 
 ## "Glossary"
 
@@ -23,16 +23,16 @@ This is the good place to see [the end schema](#usage) of InteractiveNFT's JSON,
 
 What follows in mainly for developers to know what the Sandbox expects for properties to work and to participate to the development of this (maybe?) new standard.
 
-As a **Creator** or an **Owner**, you should probably never have to edit any of those values by hand. The tools provided by the platform you used to create Interactive NFTs should be enough.
+As a **Creator** or an **Owner**, you should probably never have to edit any of those values by hand. The tools provided by the platform you used to create Dynamic NFTs should be enough.
 
 If like me, you prefer reading code with comments better than long walls of text, just [jump to Usage](#usage)
 
 ## Descriptions
 
-### Interactive NFTs
+### Dynamic NFTs
 
-Interactive NFT is a project that aims to:
-- Allow NFTs to be non static and/or interactives to the **Viewer** (procedural art with js, html, external data call, music player, video player...).
+Dynamic NFT is a project that aims to:
+- Allow NFTs to be dynamic and/or interactives to the **Viewer** (procedural art with js, html, external data call, music player, video player...).
 - Allow a **Creator** to declare some values "configurable/variables" and an **Owner** to configure those values, making the NFT evolve. (a bit like Async, but because the NFT is code running, it can go much deeper)
 
 This way, an Artist could for example create a procedural piece of art, and allow the future **Owners** to set some key values used during the art rendering, thus making the Art evolutive.
@@ -51,16 +51,16 @@ By default, only "allow-script", "allow-pointer-lock" and "allow-popups" are ena
 
 _Idea (but only idea, this is risky and would need to be handled with a lot of care): Create a system of Permissions, allowing **Creators** to request some permissions that the **Viewer** would have to accept or decline._
 
-## Interactive how?
+## Dynamic and Interactive how?
 
 ### "Hey I'm interactive"
 
-The idea is to have a property `interactive_nft` in the NFT's JSON that declares the NFT as an interactive NFT.
+The idea is to have a property `interactive_nft` in the NFT's JSON that declares the NFT as an Dynamic NFT.
 This propery references where to find the code, the dependencies, the default configuration (if any) etc...
 
 #### Version
 
-Under `interactive_nft.version` must be declared the version of the interactive NFT used. This in order to help Sandboxed in the futur to know how to render the NFT, if the "standard" comes to evolve.
+Under `interactive_nft.version` must be declared the version of the Dynamic NFT used. This in order to help Sandboxed in the futur to know how to render the NFT, if the "standard" comes to evolve.
 
 #### Code
 
@@ -94,7 +94,7 @@ When loading the NFT, the Sandbox will add the dependencies into `script` and `s
 JSON Schema
 ```json
 {
-  "title": "Interactive NFT Dependencies",
+  "title": "Dynamic NFT Dependencies",
   "type": "array",
   "items": {
     "type": "object",
@@ -118,7 +118,7 @@ Example:
 
 ```json
 {
-  "name": "Interactive NFT #1",
+  "name": "Dynamic NFT #1",
   "description": "The first of its kind.",
   "image": "http://gateway.ipfs.io/Qxn...",
   "interactive_nft": {
@@ -136,7 +136,7 @@ Example:
 
 #### Configurable
 
-***Contract implementing configurable InteractiveNFTs are expected to provide a public method `interactiveConfURI(_tokenId, _owner) public returns (string)` which works for both ERC721 and ERC1155, and returns the conf URI for a tokenId (if set by the Owner).
+***Contract implementing configurable DynamicNFTs are expected to provide a public method `interactiveConfURI(_tokenId, _owner) public returns (string)` which works for both ERC721 and ERC1155, and returns the conf URI for a tokenId (if set by the Owner).
 It should also be paired with a setter method `setInteractiveConfURI(_tokenId, _uri)` for **Owners** to be able to set the URI*** [see ERC721Configurable](#erc721configurable)
 
 If the **Creator** declared some configurable properties, they **MUST** have a default value: this to be able to reset configuration if anything is wrongly configured.
@@ -147,7 +147,7 @@ It is an Array of Objects of the form { name: String, type: String, value: Strin
 JSON Schema
 ```json
 {
-  "title": "Interactive NFT Configurable Properties",
+  "title": "Dynamic NFT Configurable Properties",
   "type": "array",
   "items": {
     "type": "object",
@@ -179,7 +179,7 @@ Example:
 
 ```json
 {
-  "name": "Interactive NFT #1",
+  "name": "Dynamic NFT #1",
   "description": "The first of its kind.",
   "image": "http://gateway.ipfs.io/Qxn...",
   "interactive_nft": {
@@ -215,7 +215,7 @@ Example:
 }
 ```
 
-_(What follows is automatically done when using [BeyondNFT/embeddable](https://github.com/BeyondNFT/embeddable) to show interactive NFTs to **Viewers**.)_
+_(What follows is automatically done when using [BeyondNFT/embeddable](https://github.com/BeyondNFT/embeddable) to show Dynamic NFTs to **Viewers**.)_
 
 When loading the NFT Metadata, the platform showing the NFT to the **Viewers** should check the existence of this `interactive_nft.properties`, and, if defined, should call the NFT contract `interactiveConfURI(_tokenId, _owner)` to see if the current NFT owner has a configuration file for this NFT.
 
@@ -258,11 +258,11 @@ const sandbox = new SandBox({
     // this whole JSON will also be available in the iframe as a JavaScript object
     // under `window.context.nft_json` so the code can read data from it (for example to get properties)
     data: {
-      name: 'Interactive NFT #1',
+      name: 'Dynamic NFT #1',
       description: "The first of its kind.",,
       image: "http://gateway.ipfs.io/Qxn...",
 
-      // interactive_nft: required (for InteractiveNFT)
+      // interactive_nft: required (for DynamicNFT)
       // this is the property the Sandbox will look for in order to render the NFT
       interactive_nft: {
         // code_uri (optional) - URI where to find the code to execute
@@ -272,7 +272,7 @@ const sandbox = new SandBox({
         code: '<script>console.log("here");</script>',
 
         // version: required
-        // version of the Sandbox used to create this interactive NFT, might be important at some point
+        // version of the Sandbox used to create this Dynamic NFT, might be important at some point
         // if the way the sandbox works changes a lot, we will need to know what Sandbox to use to load
         // the NFT
         version: '0.0.1',
@@ -386,7 +386,7 @@ Executing "user submitted" code is always a bit tricky.
 
 Using a Sandboxed iframe should already help to stop a lot of problem that can happen, but still, users should be warned to not do anything that seems suspicious when the NFT runs.
 
-Therefore, if you use this Sandbox on your website, before the first rendering it would be nice to tell users that they will be shown an Interactive NFT and that they must be carefull because you do not have control over the code itself.
+Therefore, if you use this Sandbox on your website, before the first rendering it would be nice to tell users that they will be shown an Dynamic NFT and that they must be carefull because you do not have control over the code itself.
 
 @TODO: Should we set that directly in the Sandbox?
 
