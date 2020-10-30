@@ -10,6 +10,7 @@
   export let owner_properties = {};
   export let owner = '0x0000000000000000000000000000000000000000';
   export let sandbox_props = '';
+  export const version = process.env.npm_package_version;
 
   let proxy = null;
 

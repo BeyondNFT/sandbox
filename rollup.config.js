@@ -2,6 +2,7 @@ import svelte from 'rollup-plugin-svelte';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import livereload from 'rollup-plugin-livereload';
+import replace from '@rollup/plugin-replace';
 import { terser } from 'rollup-plugin-terser';
 import pkg from './package.json';
 
@@ -65,6 +66,14 @@ export default {
   input: 'src/main.js',
   output,
   plugins: [
+    replace({
+      'process.env.NODE_ENV': JSON.stringify(
+        production ? 'production' : 'developmennt'
+      ),
+      'process.env.npm_package_version': JSON.stringify(
+        process.env.npm_package_version
+      ),
+    }),
     svelte({
       dev: !production,
     }),

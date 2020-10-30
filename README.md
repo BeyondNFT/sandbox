@@ -274,7 +274,7 @@ Props Schema :
 Full example of usage, because code is ten times better than words (You can also see [./public/index.html](./public/index.html) to see another one)
 
 ```js
-import Sandbox from 'https://cdn.jsdelivr.net/npm/@beyondnft/sandbox@0.0.2/dist/nftsandbox.es.min.js';
+import Sandbox from 'https://cdn.jsdelivr.net/npm/@beyondnft/sandbox@0.0.3/dist/nftsandbox.es.min.js';
 const sandbox = new SandBox({
   target: document.querySelector('#viewer'),
   props: {
