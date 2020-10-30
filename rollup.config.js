@@ -52,13 +52,13 @@ if (!production) {
     {
       file: pkg.module,
       format: 'es',
-      plugins: [production && terser()],
+      plugins: [terser()],
     },
     {
       file: pkg.main,
       format: 'umd',
       name,
-      plugins: [production && terser()],
+      plugins: [terser()],
     }
   );
 }
@@ -68,7 +68,7 @@ export default {
   plugins: [
     replace({
       'process.env.NODE_ENV': JSON.stringify(
-        production ? 'production' : 'developmennt'
+        production ? 'production' : 'development'
       ),
       'process.env.npm_package_version': JSON.stringify(
         process.env.npm_package_version
