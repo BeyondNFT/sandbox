@@ -18,6 +18,28 @@
   }
 
   onMount(async () => {
+    if ('string' === typeof data) {
+      await fetch(data)
+        .then((res) => res.json())
+        .then((_data) => (data = _data))
+        .catch((e) => {
+          dispatch(
+            'warning',
+            new Error(`Error while fetching NFT's JSON at ${data}`)
+          );
+          data = null;
+        });
+    }
+
+    if (!data) {
+      dispatch(
+        'error',
+        new Error(`You need to provide a data property.
+      Either a valid uri to the NFT JSON or the parsed NFT JSON.`)
+      );
+      return;
+    }
+
     // first fetch owner_properties if it's an URI
     if (owner_properties) {
       if ('string' === typeof owner_properties) {

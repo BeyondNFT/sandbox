@@ -1,0 +1,19 @@
+{
+	"name": "NFT #1",
+	"description": "yes.",
+	"attributes": {
+		"processing": "p5js"
+	},
+	"interactive_nft": {
+		"code_uri": "./code.html",
+		"dependencies": [{
+			"url": "https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.1.9/p5.min.js",
+			"type": "script"
+		}],
+		"properties": [{
+			"name": "color",
+			"type": "string",
+			"value": "#000000"
+		}]
+	}
+}

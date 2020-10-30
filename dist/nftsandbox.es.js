@@ -1004,7 +1004,7 @@ class Viewer extends SvelteComponentDev {
 
 const { Error: Error_1 } = globals;
 
-// (79:0) {:else}
+// (101:0) {:else}
 function create_else_block(ctx) {
 	let t;
 
@@ -1027,14 +1027,14 @@ function create_else_block(ctx) {
 		block,
 		id: create_else_block.name,
 		type: "else",
-		source: "(79:0) {:else}",
+		source: "(101:0) {:else}",
 		ctx
 	});
 
 	return block;
 }
 
-// (68:0) {#if code}
+// (90:0) {#if code}
 function create_if_block$1(ctx) {
 	let viewer;
 	let updating_proxy;
@@ -1104,7 +1104,7 @@ function create_if_block$1(ctx) {
 		block,
 		id: create_if_block$1.name,
 		type: "if",
-		source: "(68:0) {#if code}",
+		source: "(90:0) {#if code}",
 		ctx
 	});
 
@@ -1207,6 +1207,20 @@ function instance$1($$self, $$props, $$invalidate) {
 	}
 
 	onMount(async () => {
+		if ("string" === typeof data) {
+			await fetch(data).then(res => res.json()).then(_data => $$invalidate(0, data = _data)).catch(e => {
+				dispatch("warning", new Error(`Error while fetching NFT's JSON at ${data}`));
+				$$invalidate(0, data = null);
+			});
+		}
+
+		if (!data) {
+			dispatch("error", new Error(`You need to provide a data property.
+      Either a valid uri to the NFT JSON or the parsed NFT JSON.`));
+
+			return;
+		}
+
 		// first fetch owner_properties if it's an URI
 		if (owner_properties) {
 			if ("string" === typeof owner_properties) {

@@ -52,29 +52,6 @@ By default, only "allow-script", "allow-pointer-lock" and "allow-popups" are ena
 
 _Idea (but only idea, this is risky and would need to be handled with a lot of care): Create a system of Permissions, allowing **Creators** to request some permissions that the **Viewer** would have to accept or decline._
 
-#### Process of the Sandbox
-
-The Sandbox internal processus is as follow :
-- Sandbox checks if `owner_properties` is set
-  - if yes and it's a string, then it will try to fetch and parse the result
-  - else it should be an object
-- Sandbox checks if code is provided in `data.interactive_nft.code` (not recommended - only use in dev mode)
-  - If not Sandbox will try to fetch code from `data.interactive_nft.code_uri` property
-  - else it won't run and trhow an error
-- Sandbox will load `data.interactive_nft.dependencies` in respective script and style tags
-- Sandbox will assign `owner_properties` to  `data.interactive_nft.properties`
-  - the result will be assigned to `window.context.properties` making it accessible to the javascript.
-- Sandbox will set `window.context.owner` to the provided owner property (or default to address(0))
-- - Sandbox will assign to `window.context.nft_json` the value of the current json file
-- Sandbox will execute the code
-
-#### Data access for dynamisme of the NFTs
-
-This way in your code's JavaScript you can access data as follow:
-- `window.context.nft_json` contains all the NFT data (name, description, attributes, image, ...)
-- `window.context.owner` contains the NFT Owner address
-- `window.context.properties` contains the configurable properties
-
 
 ## Dynamic and Interactive how?
 
@@ -301,10 +278,13 @@ import Sandbox from 'https://cdn.jsdelivr.net/npm/@beyondnft/sandbox@0.0.2/dist/
 const sandbox = new SandBox({
   target: document.querySelector('#viewer'),
   props: {
-    // data: required
-    // This is the content of tokenURI
-    // the Sandbox will look for the `interactive_nft` property
-    // this whole JSON will also be available in the iframe as a JavaScript object
+    // data: required | Mixed
+    // This is either the tokenURI (string) or the content (object - JSON.parsed) of tokenURI
+    //
+    // The Sandbox will look for the `interactive_nft` property in thos object
+    // Else it will show the `image` property
+    //
+    // This whole JSON will also be available in the iframe as a JavaScript object
     // under `window.context.nft_json` so the code can read data from it
     // (for example to get attributes or the NFT name)
     data: {
@@ -355,7 +335,7 @@ const sandbox = new SandBox({
         // those properties are here to configure the NFT rendering
         // because those are the one the Owner of the NFT can modify and store somewhere
         // for them to be loaded when users are viewing their NFT
-        // These values will be set in window.context.properties and be accessed inf the NFT Javascript as follow
+        // These values will be set in `window.context.properties` and be accessed in the NFT Javascript as follow
         // `const propertyValue = window.context.properties[propertyName]`;
         properties: [{
             // name: required
@@ -425,10 +405,37 @@ const sandbox = new SandBox({
 });
 ```
 
+#### Process of the Sandbox
+
+The Sandbox internal processus is as follow :
+- Sandbox checks if data is set
+  - if it's a string, it will try to fetch it and JSON.parse
+  - else it should be a JavaScript Object, content of the NFT JSON
+- Sandbox checks if `owner_properties` is set
+  - if it's a string, it will try to fetch it and JSON.parse the result
+  - else it should be a JavaScript Object, content of the configuration JSON
+- Sandbox checks if code is provided in `data.interactive_nft.code` (not recommended - only use in dev mode)
+  - If not Sandbox will try to fetch code from `data.interactive_nft.code_uri` property
+  - else it won't run and trhow an error
+- Sandbox will load `data.interactive_nft.dependencies` in respective script and style tags
+- Sandbox will assign `owner_properties` to  `data.interactive_nft.properties`
+  - the result will be assigned to `window.context.properties` making it accessible to the javascript.
+- Sandbox will set `window.context.owner` to the provided owner property (or default to address(0))
+- - Sandbox will assign to `window.context.nft_json` the value of the current json file
+- Sandbox will execute the code
+
+#### Data access for dynamisme of the NFTs
+
+This way in your code's JavaScript you can access data as follow:
+- `window.context.nft_json` contains all the NFT data (name, description, attributes, image, ...)
+- `window.context.owner` contains the NFT Owner address
+- `window.context.properties` contains the configurable properties
+
+
 ## Events
 
 The Sandbox dispatch events to let you know what happens inside.
-You can listen to those events using `sandboxnInstance.$on(eventName, fn)`
+You can listen to those events using `sandboxInstance.$on(eventName, fn)`
 
 For the moment, events are:
 
@@ -436,6 +443,7 @@ For the moment, events are:
 
 `error`: When any `unhandledrejection` happens in the iframe. The iframe content will blur and stop any interaction if that happens (@TODO: reflect whether to make this configurable directly when instantiating the sandbox?!)
 
+`warning`: is emitted when something odd happens, but is not blocking the rendering (for example if the owner_properties is a string that doesn't resolve to a valid JSON file when fetched)
 
 ## User Warning
 
@@ -446,7 +454,7 @@ Using a Sandboxed iframe should already help to stop a lot of problem that can h
 Therefore, if you use this Sandbox on your website, before the first rendering it would be nice to tell users that they will be shown an Dynamic NFT and that they must be carefull because you do not have control over the code itself.
 
 @TODO: Should we set that directly in the Sandbox?
-
+@TODO: Research if there is a way to create an AST of all the javascript code in the NFT code, and add things to it, to prevent for example infitinie loop or other things
 ## Development
 
 Feel free to help develop or correct bug as this is highly POC for the moment.
@@ -508,3 +516,6 @@ abstract contract ERC721Configurable {
     }
 }
 ```
+
+The ERC1155 coming soon.
+It needs an Owner to the interactiveConfURI method as it will be a conf per owner per tokenId
