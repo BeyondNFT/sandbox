@@ -7,6 +7,9 @@
 
     <script>
       (function () {
+        const local_eval = eval;
+        eval = function () {};
+
         function handle_message(ev) {
           let { action, cmd_id } = ev.data;
           const send_message = (payload) =>
@@ -20,7 +23,7 @@
           if (action === 'eval') {
             try {
               const { script } = ev.data.args;
-              eval(script);
+              local_eval(script);
               send_ok();
             } catch (e) {
               send_error(e.message, e.stack);
@@ -296,6 +299,7 @@
         window.context = {
           nft_json: {},
           config: {},
+          owner: '0x0000000000000000000000000000000000000000',
         };
       })(this);
     </script>

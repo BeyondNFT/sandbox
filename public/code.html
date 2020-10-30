@@ -10,6 +10,8 @@
 <dl>
   <dt>NFT name (window.context.nft_json.name)</dt>
   <dd class="name"></dd>
+  <dt>NFT Owner (window.context.owner)</dt>
+  <dd class="owner"></dd>
   <dt>Owner defined color (window.context.properties.color)</dt>
   <dd class="color"></dd>
   <dt>Attributes:</dt>
@@ -20,6 +22,7 @@
 </dl>
 <script type="text/javascript">
   document.querySelector('.name').innerText = window.context.nft_json.name;
+  document.querySelector('.owner').innerText = window.context.owner;
 
   const $attributes = document.querySelector('.attributes');
   const attributes = window.context.nft_json.attributes;

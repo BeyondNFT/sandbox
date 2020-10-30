@@ -45,11 +45,36 @@ Another example would be a Card on which the **Viewer** could click; the card wo
 This Sandbox aims to display the NFT code in a safe way for the **Viewer**.
 For Security reasons, the NFT Code is sandboxed in an iframe, using srcdoc.
 By default, only "allow-script", "allow-pointer-lock" and "allow-popups" are enabled. So no access to parent context or same origin stuffs (cookies, localStorage & co).
+`eval` and `alert` are also disabled.
 
 - [MDN iframe (see sandbox)](https://developer.mozilla.org/fr/docs/Web/HTML/Element/iframe)
 - [Play safely in a sandbox](https://www.html5rocks.com/en/tutorials/security/sandboxed-iframes/)
 
 _Idea (but only idea, this is risky and would need to be handled with a lot of care): Create a system of Permissions, allowing **Creators** to request some permissions that the **Viewer** would have to accept or decline._
+
+#### Process of the Sandbox
+
+The Sandbox internal processus is as follow :
+- Sandbox checks if `owner_properties` is set
+  - if yes and it's a string, then it will try to fetch and parse the result
+  - else it should be an object
+- Sandbox checks if code is provided in `data.interactive_nft.code` (not recommended - only use in dev mode)
+  - If not Sandbox will try to fetch code from `data.interactive_nft.code_uri` property
+  - else it won't run and trhow an error
+- Sandbox will load `data.interactive_nft.dependencies` in respective script and style tags
+- Sandbox will assign `owner_properties` to  `data.interactive_nft.properties`
+  - the result will be assigned to `window.context.properties` making it accessible to the javascript.
+- Sandbox will set `window.context.owner` to the provided owner property (or default to address(0))
+- - Sandbox will assign to `window.context.nft_json` the value of the current json file
+- Sandbox will execute the code
+
+#### Data access for dynamisme of the NFTs
+
+This way in your code's JavaScript you can access data as follow:
+- `window.context.nft_json` contains all the NFT data (name, description, attributes, image, ...)
+- `window.context.owner` contains the NFT Owner address
+- `window.context.properties` contains the configurable properties
+
 
 ## Dynamic and Interactive how?
 
@@ -98,7 +123,7 @@ JSON Schema
   "type": "array",
   "items": {
     "type": "object",
-    "properties": {,
+    "properties": {
       "required": ["type", "url"],
       "type": {
         "type": "string",
@@ -244,6 +269,30 @@ Construction parameter is an Object with two required properties :
 `target`: an HTML element where to render the Sandbox
 `props`: An object of properties read by the Sandbox
 
+Props Schema :
+
+```json
+{
+  "title": "Sandbox Props definition",
+  "type": "object",
+  "properties": {
+    "required": ["data"],
+    "data": {
+      "type": "object",
+      "description": "NFT's JSON Object (result of tokenURI -erc721- or uri -erc1155-)."
+    },
+    "owner": {
+      "type": "string",
+      "description": "Address of the current token owner. Default to solidity's address(0)."
+    },
+    "owner_properties": {
+      "type": "object",
+      "description": "Configurable properties set by the owner (result of interactiveConfURI call)."
+    }
+  }
+}
+```
+
 
 Full example of usage, because code is ten times better than words (You can also see [./public/index.html](./public/index.html) to see another one)
 
@@ -253,10 +302,11 @@ const sandbox = new SandBox({
   target: document.querySelector('#viewer'),
   props: {
     // data: required
-    // This is a JavaScript object, usually the result of JSON.parse of the content of tokenURI
+    // This is the content of tokenURI
     // the Sandbox will look for the `interactive_nft` property
     // this whole JSON will also be available in the iframe as a JavaScript object
-    // under `window.context.nft_json` so the code can read data from it (for example to get properties)
+    // under `window.context.nft_json` so the code can read data from it
+    // (for example to get attributes or the NFT name)
     data: {
       name: 'Dynamic NFT #1',
       description: "The first of its kind.",,
@@ -350,7 +400,14 @@ const sandbox = new SandBox({
         ]
       }
     },
-    // owner_properties: optional
+    // owner: optional (but should be set when possible - defaults to 0x0000000000000000000000000000000000000000)
+    // Address of the current owner. Accessible in the code under `window.context.owner`
+    owner: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B',
+
+    // owner_properties: optional | Mixed
+    // owner_properties can be an URI (to the Owner configuration) or an Object (containing the owner configuration)
+    // if it's an URI it will first retrieve the data and JSON.parse it
+    //
     // object containing all the properties the Owner configured
     // this should be the content of the NFT's stored configuration file (if set by the owner and NFT is configurable)
     // the Sandbox will override the default props with the values in here, making the NFT

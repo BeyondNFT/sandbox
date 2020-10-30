@@ -46,14 +46,16 @@
                 {
                   name: 'color',
                   type: 'string',
-                  value: '#ffffff',
+                  value: '#000000',
                 },
               ],
             },
           },
-          owner_properties: {
-            color: 'blue',
-          },
+          // current owner of this NFT
+          owner: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B',
+          // uri where to fetch the owner properties
+          // result of interactiveConfURI call on the contract
+          owner_properties: './owner_properties.json',
         },
       });
 

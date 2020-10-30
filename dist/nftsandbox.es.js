@@ -1,4 +1,11 @@
+
+(function(l, r) { if (l.getElementById('livereloadscript')) return; r = l.createElement('script'); r.async = 1; r.src = '//' + (window.location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1'; r.id = 'livereloadscript'; l.getElementsByTagName('head')[0].appendChild(r) })(window.document);
 function noop() { }
+function add_location(element, file, line, column, char) {
+    element.__svelte_meta = {
+        loc: { file, line, column, char }
+    };
+}
 function run(fn) {
     return fn();
 }
@@ -197,6 +204,12 @@ function transition_out(block, local, detach, callback) {
     }
 }
 
+const globals = (typeof window !== 'undefined'
+    ? window
+    : typeof globalThis !== 'undefined'
+        ? globalThis
+        : global);
+
 function bind(component, name, callback) {
     const index = component.$$.props[name];
     if (index !== undefined) {
@@ -326,6 +339,52 @@ class SvelteComponent {
     }
 }
 
+function dispatch_dev(type, detail) {
+    document.dispatchEvent(custom_event(type, Object.assign({ version: '3.29.0' }, detail)));
+}
+function append_dev(target, node) {
+    dispatch_dev("SvelteDOMInsert", { target, node });
+    append(target, node);
+}
+function insert_dev(target, node, anchor) {
+    dispatch_dev("SvelteDOMInsert", { target, node, anchor });
+    insert(target, node, anchor);
+}
+function detach_dev(node) {
+    dispatch_dev("SvelteDOMRemove", { node });
+    detach(node);
+}
+function attr_dev(node, attribute, value) {
+    attr(node, attribute, value);
+    if (value == null)
+        dispatch_dev("SvelteDOMRemoveAttribute", { node, attribute });
+    else
+        dispatch_dev("SvelteDOMSetAttribute", { node, attribute, value });
+}
+function validate_slots(name, slot, keys) {
+    for (const slot_key of Object.keys(slot)) {
+        if (!~keys.indexOf(slot_key)) {
+            console.warn(`<${name}> received an unexpected slot "${slot_key}".`);
+        }
+    }
+}
+class SvelteComponentDev extends SvelteComponent {
+    constructor(options) {
+        if (!options || (!options.target && !options.$$inline)) {
+            throw new Error(`'target' is a required option`);
+        }
+        super();
+    }
+    $destroy() {
+        super.$destroy();
+        this.$destroy = () => {
+            console.warn(`Component was already destroyed`); // eslint-disable-line no-console
+        };
+    }
+    $capture_state() { }
+    $inject_state() { }
+}
+
 let uid = 1;
 
 function handle_command_message(cmd_data) {
@@ -432,7 +491,7 @@ class Proxy {
   }
 }
 
-var srcdoc = "<!DOCTYPE html>\n<html>\n  <head>\n    <style>\n      \n    </style>\n\n    <script>\n      (function () {\n        function handle_message(ev) {\n          let { action, cmd_id } = ev.data;\n          const send_message = (payload) =>\n            parent.postMessage({ ...payload }, ev.origin);\n\n          const send_reply = (payload) => send_message({ ...payload, cmd_id });\n          const send_ok = (args) => send_reply({ action: 'cmd_ok', args });\n          const send_error = (message, stack) =>\n            send_reply({ action: 'cmd_error', message, stack });\n\n          if (action === 'eval') {\n            try {\n              const { script } = ev.data.args;\n              eval(script);\n              send_ok();\n            } catch (e) {\n              send_error(e.message, e.stack);\n            }\n          }\n\n          if (action === 'add_script') {\n            try {\n              const script = document.createElement('script');\n              script.src = ev.data.args;\n              script.onload = () => send_ok();\n              document.body.appendChild(script);\n            } catch (e) {\n              send_error(e.message, e.stack);\n            }\n          }\n\n          if (action === 'add_script_content') {\n            try {\n              const script = document.createElement('script');\n              script.text = ev.data.args;\n              script.type = 'text/javascript';\n              document.body.appendChild(script);\n              send_ok();\n            } catch (e) {\n              send_error(e.message, e.stack);\n            }\n          }\n\n          if (action === 'add_style') {\n            try {\n              const link = document.createElement('link');\n              link.rel = 'stylesheet';\n              link.href = ev.data.args;\n              link.onload = () => send_ok();\n              document.body.appendChild(link);\n            } catch (e) {\n              send_error(e.message, e.stack);\n            }\n          }\n\n          if (action === 'catch_clicks') {\n            try {\n              const top_origin = ev.origin;\n              document.body.addEventListener('click', (event) => {\n                if (event.which !== 1) return;\n                if (event.metaKey || event.ctrlKey || event.shiftKey) return;\n                if (event.defaultPrevented) return;\n\n                // ensure target is a link\n                let el = event.target;\n                while (el && el.nodeName !== 'A') el = el.parentNode;\n                if (!el || el.nodeName !== 'A') return;\n\n                if (\n                  el.hasAttribute('download') ||\n                  el.getAttribute('rel') === 'external' ||\n                  el.target\n                )\n                  return;\n\n                event.preventDefault();\n\n                if (el.href.startsWith(top_origin)) {\n                  const url = new URL(el.href);\n                  if (url.hash[0] === '#') {\n                    window.location.hash = url.hash;\n                    return;\n                  }\n                }\n\n                window.open(el.href, '_blank');\n              });\n              send_ok();\n            } catch (e) {\n              send_error(e.message, e.stack);\n            }\n          }\n        }\n\n        window.addEventListener('message', handle_message, false);\n\n        window.onerror = function (msg, url, lineNo, columnNo, error) {\n          try {\n            parent.postMessage({ action: 'error', value: error }, '*');\n          } catch (e) {\n            parent.postMessage({ action: 'error', value: msg }, '*');\n            parent.postMessage({ action: 'error', value: error }, '*');\n          }\n        };\n\n        window.addEventListener('unhandledrejection', (event) => {\n          parent.postMessage(\n            { action: 'unhandledrejection', value: event.reason },\n            '*'\n          );\n        });\n\n        let previous = { level: null, args: null };\n\n        ['clear', 'log', 'info', 'dir', 'warn', 'error', 'table'].forEach(\n          (level) => {\n            const original = console[level];\n            console[level] = (...args) => {\n              const stringifiedArgs = stringify(args);\n              if (\n                previous.level === level &&\n                previous.args &&\n                previous.args === stringifiedArgs\n              ) {\n                parent.postMessage(\n                  { action: 'console', level, duplicate: true },\n                  '*'\n                );\n              } else {\n                previous = { level, args: stringifiedArgs };\n\n                try {\n                  parent.postMessage({ action: 'console', level, args }, '*');\n                } catch (err) {\n                  parent.postMessage(\n                    { action: 'console', level: 'unclonable' },\n                    '*'\n                  );\n                }\n              }\n\n              original(...args);\n            };\n          }\n        );\n\n        [\n          { method: 'group', action: 'console_group' },\n          { method: 'groupEnd', action: 'console_group_end' },\n          { method: 'groupCollapsed', action: 'console_group_collapsed' },\n        ].forEach((group_action) => {\n          const original = console[group_action.method];\n          console[group_action.method] = (label) => {\n            parent.postMessage({ action: group_action.action, label }, '*');\n\n            original(label);\n          };\n        });\n\n        const timers = new Map();\n        const original_time = console.time;\n        const original_timelog = console.timeLog;\n        const original_timeend = console.timeEnd;\n\n        console.time = (label = 'default') => {\n          original_time(label);\n          timers.set(label, performance.now());\n        };\n        console.timeLog = (label = 'default') => {\n          original_timelog(label);\n          const now = performance.now();\n          if (timers.has(label)) {\n            parent.postMessage(\n              {\n                action: 'console',\n                level: 'system-log',\n                args: [`${label}: ${now - timers.get(label)}ms`],\n              },\n              '*'\n            );\n          } else {\n            parent.postMessage(\n              {\n                action: 'console',\n                level: 'system-warn',\n                args: [`Timer '${label}' does not exist`],\n              },\n              '*'\n            );\n          }\n        };\n        console.timeEnd = (label = 'default') => {\n          original_timeend(label);\n          const now = performance.now();\n          if (timers.has(label)) {\n            parent.postMessage(\n              {\n                action: 'console',\n                level: 'system-log',\n                args: [`${label}: ${now - timers.get(label)}ms`],\n              },\n              '*'\n            );\n          } else {\n            parent.postMessage(\n              {\n                action: 'console',\n                level: 'system-warn',\n                args: [`Timer '${label}' does not exist`],\n              },\n              '*'\n            );\n          }\n          timers.delete(label);\n        };\n\n        const original_assert = console.assert;\n        console.assert = (condition, ...args) => {\n          if (condition) {\n            const stack = new Error().stack;\n            parent.postMessage(\n              { action: 'console', level: 'assert', args, stack },\n              '*'\n            );\n          }\n          original_assert(condition, ...args);\n        };\n\n        const counter = new Map();\n        const original_count = console.count;\n        const original_countreset = console.countReset;\n\n        console.count = (label = 'default') => {\n          counter.set(label, (counter.get(label) || 0) + 1);\n          parent.postMessage(\n            {\n              action: 'console',\n              level: 'system-log',\n              args: `${label}: ${counter.get(label)}`,\n            },\n            '*'\n          );\n          original_count(label);\n        };\n\n        console.countReset = (label = 'default') => {\n          if (counter.has(label)) {\n            counter.set(label, 0);\n          } else {\n            parent.postMessage(\n              {\n                action: 'console',\n                level: 'system-warn',\n                args: `Count for '${label}' does not exist`,\n              },\n              '*'\n            );\n          }\n          original_countreset(label);\n        };\n\n        const original_trace = console.trace;\n\n        console.trace = (...args) => {\n          const stack = new Error().stack;\n          parent.postMessage(\n            { action: 'console', level: 'trace', args, stack },\n            '*'\n          );\n          original_trace(...args);\n        };\n\n        function stringify(args) {\n          try {\n            return JSON.stringify(args);\n          } catch (error) {\n            return null;\n          }\n        }\n      })(this);\n\n      // remove alert, set window context\n      (() => {\n        const original_alert = window.alert;\n        window.alert = function () {};\n\n        window.context = {\n          nft_json: {},\n          config: {},\n        };\n      })(this);\n    </script>\n  </head>\n  <body>\n    <!-- NFTCODE -->\n  </body>\n</html>\n";
+var srcdoc = "<!DOCTYPE html>\n<html>\n  <head>\n    <style>\n      \n    </style>\n\n    <script>\n      (function () {\n        const local_eval = eval;\n        eval = function () {};\n\n        function handle_message(ev) {\n          let { action, cmd_id } = ev.data;\n          const send_message = (payload) =>\n            parent.postMessage({ ...payload }, ev.origin);\n\n          const send_reply = (payload) => send_message({ ...payload, cmd_id });\n          const send_ok = (args) => send_reply({ action: 'cmd_ok', args });\n          const send_error = (message, stack) =>\n            send_reply({ action: 'cmd_error', message, stack });\n\n          if (action === 'eval') {\n            try {\n              const { script } = ev.data.args;\n              local_eval(script);\n              send_ok();\n            } catch (e) {\n              send_error(e.message, e.stack);\n            }\n          }\n\n          if (action === 'add_script') {\n            try {\n              const script = document.createElement('script');\n              script.src = ev.data.args;\n              script.onload = () => send_ok();\n              document.body.appendChild(script);\n            } catch (e) {\n              send_error(e.message, e.stack);\n            }\n          }\n\n          if (action === 'add_script_content') {\n            try {\n              const script = document.createElement('script');\n              script.text = ev.data.args;\n              script.type = 'text/javascript';\n              document.body.appendChild(script);\n              send_ok();\n            } catch (e) {\n              send_error(e.message, e.stack);\n            }\n          }\n\n          if (action === 'add_style') {\n            try {\n              const link = document.createElement('link');\n              link.rel = 'stylesheet';\n              link.href = ev.data.args;\n              link.onload = () => send_ok();\n              document.body.appendChild(link);\n            } catch (e) {\n              send_error(e.message, e.stack);\n            }\n          }\n\n          if (action === 'catch_clicks') {\n            try {\n              const top_origin = ev.origin;\n              document.body.addEventListener('click', (event) => {\n                if (event.which !== 1) return;\n                if (event.metaKey || event.ctrlKey || event.shiftKey) return;\n                if (event.defaultPrevented) return;\n\n                // ensure target is a link\n                let el = event.target;\n                while (el && el.nodeName !== 'A') el = el.parentNode;\n                if (!el || el.nodeName !== 'A') return;\n\n                if (\n                  el.hasAttribute('download') ||\n                  el.getAttribute('rel') === 'external' ||\n                  el.target\n                )\n                  return;\n\n                event.preventDefault();\n\n                if (el.href.startsWith(top_origin)) {\n                  const url = new URL(el.href);\n                  if (url.hash[0] === '#') {\n                    window.location.hash = url.hash;\n                    return;\n                  }\n                }\n\n                window.open(el.href, '_blank');\n              });\n              send_ok();\n            } catch (e) {\n              send_error(e.message, e.stack);\n            }\n          }\n        }\n\n        window.addEventListener('message', handle_message, false);\n\n        window.onerror = function (msg, url, lineNo, columnNo, error) {\n          try {\n            parent.postMessage({ action: 'error', value: error }, '*');\n          } catch (e) {\n            parent.postMessage({ action: 'error', value: msg }, '*');\n            parent.postMessage({ action: 'error', value: error }, '*');\n          }\n        };\n\n        window.addEventListener('unhandledrejection', (event) => {\n          parent.postMessage(\n            { action: 'unhandledrejection', value: event.reason },\n            '*'\n          );\n        });\n\n        let previous = { level: null, args: null };\n\n        ['clear', 'log', 'info', 'dir', 'warn', 'error', 'table'].forEach(\n          (level) => {\n            const original = console[level];\n            console[level] = (...args) => {\n              const stringifiedArgs = stringify(args);\n              if (\n                previous.level === level &&\n                previous.args &&\n                previous.args === stringifiedArgs\n              ) {\n                parent.postMessage(\n                  { action: 'console', level, duplicate: true },\n                  '*'\n                );\n              } else {\n                previous = { level, args: stringifiedArgs };\n\n                try {\n                  parent.postMessage({ action: 'console', level, args }, '*');\n                } catch (err) {\n                  parent.postMessage(\n                    { action: 'console', level: 'unclonable' },\n                    '*'\n                  );\n                }\n              }\n\n              original(...args);\n            };\n          }\n        );\n\n        [\n          { method: 'group', action: 'console_group' },\n          { method: 'groupEnd', action: 'console_group_end' },\n          { method: 'groupCollapsed', action: 'console_group_collapsed' },\n        ].forEach((group_action) => {\n          const original = console[group_action.method];\n          console[group_action.method] = (label) => {\n            parent.postMessage({ action: group_action.action, label }, '*');\n\n            original(label);\n          };\n        });\n\n        const timers = new Map();\n        const original_time = console.time;\n        const original_timelog = console.timeLog;\n        const original_timeend = console.timeEnd;\n\n        console.time = (label = 'default') => {\n          original_time(label);\n          timers.set(label, performance.now());\n        };\n        console.timeLog = (label = 'default') => {\n          original_timelog(label);\n          const now = performance.now();\n          if (timers.has(label)) {\n            parent.postMessage(\n              {\n                action: 'console',\n                level: 'system-log',\n                args: [`${label}: ${now - timers.get(label)}ms`],\n              },\n              '*'\n            );\n          } else {\n            parent.postMessage(\n              {\n                action: 'console',\n                level: 'system-warn',\n                args: [`Timer '${label}' does not exist`],\n              },\n              '*'\n            );\n          }\n        };\n        console.timeEnd = (label = 'default') => {\n          original_timeend(label);\n          const now = performance.now();\n          if (timers.has(label)) {\n            parent.postMessage(\n              {\n                action: 'console',\n                level: 'system-log',\n                args: [`${label}: ${now - timers.get(label)}ms`],\n              },\n              '*'\n            );\n          } else {\n            parent.postMessage(\n              {\n                action: 'console',\n                level: 'system-warn',\n                args: [`Timer '${label}' does not exist`],\n              },\n              '*'\n            );\n          }\n          timers.delete(label);\n        };\n\n        const original_assert = console.assert;\n        console.assert = (condition, ...args) => {\n          if (condition) {\n            const stack = new Error().stack;\n            parent.postMessage(\n              { action: 'console', level: 'assert', args, stack },\n              '*'\n            );\n          }\n          original_assert(condition, ...args);\n        };\n\n        const counter = new Map();\n        const original_count = console.count;\n        const original_countreset = console.countReset;\n\n        console.count = (label = 'default') => {\n          counter.set(label, (counter.get(label) || 0) + 1);\n          parent.postMessage(\n            {\n              action: 'console',\n              level: 'system-log',\n              args: `${label}: ${counter.get(label)}`,\n            },\n            '*'\n          );\n          original_count(label);\n        };\n\n        console.countReset = (label = 'default') => {\n          if (counter.has(label)) {\n            counter.set(label, 0);\n          } else {\n            parent.postMessage(\n              {\n                action: 'console',\n                level: 'system-warn',\n                args: `Count for '${label}' does not exist`,\n              },\n              '*'\n            );\n          }\n          original_countreset(label);\n        };\n\n        const original_trace = console.trace;\n\n        console.trace = (...args) => {\n          const stack = new Error().stack;\n          parent.postMessage(\n            { action: 'console', level: 'trace', args, stack },\n            '*'\n          );\n          original_trace(...args);\n        };\n\n        function stringify(args) {\n          try {\n            return JSON.stringify(args);\n          } catch (error) {\n            return null;\n          }\n        }\n      })(this);\n\n      // remove alert, set window context\n      (() => {\n        const original_alert = window.alert;\n        window.alert = function () {};\n\n        window.context = {\n          nft_json: {},\n          config: {},\n          owner: '0x0000000000000000000000000000000000000000',\n        };\n      })(this);\n    </script>\n  </head>\n  <body>\n    <!-- NFTCODE -->\n  </body>\n</html>\n";
 
 function makeDependencies(dependencies) {
   let result = '';
@@ -463,32 +522,54 @@ function scriptify(script) {
   return `<script type="text/javascript">${script}</script>`;
 }
 
+var utils = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    makeDependencies: makeDependencies,
+    scriptify: scriptify
+});
+
 /* src/Output/Viewer.svelte generated by Svelte v3.29.0 */
+const file = "src/Output/Viewer.svelte";
 
 function add_css() {
 	var style = element("style");
 	style.id = "svelte-1bwdt9k-style";
-	style.textContent = ".beyondnft__sandbox.svelte-1bwdt9k{background-color:white;border:none;width:100%;height:100%;position:relative}iframe.svelte-1bwdt9k{width:100%;height:100%;border:none;display:block}.greyed-out.svelte-1bwdt9k{filter:grayscale(50%) blur(1px);opacity:0.25}.beyondnft__sandbox__error.svelte-1bwdt9k{font-size:0.9em;position:absolute;top:0;left:0;padding:5px}";
-	append(document.head, style);
+	style.textContent = ".beyondnft__sandbox.svelte-1bwdt9k{background-color:white;border:none;width:100%;height:100%;position:relative}iframe.svelte-1bwdt9k{width:100%;height:100%;border:none;display:block}.greyed-out.svelte-1bwdt9k{filter:grayscale(50%) blur(1px);opacity:0.25}.beyondnft__sandbox__error.svelte-1bwdt9k{font-size:0.9em;position:absolute;top:0;left:0;padding:5px}\n/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiVmlld2VyLnN2ZWx0ZSIsInNvdXJjZXMiOlsiVmlld2VyLnN2ZWx0ZSJdLCJzb3VyY2VzQ29udGVudCI6WyI8c2NyaXB0PlxuICBpbXBvcnQgeyBjcmVhdGVFdmVudERpc3BhdGNoZXIsIG9uTW91bnQgfSBmcm9tICdzdmVsdGUnO1xuXG4gIGltcG9ydCBQcm94eSBmcm9tICcuL1Byb3h5JztcbiAgaW1wb3J0IHNyY2RvYyBmcm9tICcuL3NyY2RvYy9pbmRleC5qcyc7XG4gIGltcG9ydCAqIGFzIHV0aWxzIGZyb20gJy4vdXRpbHMuanMnO1xuXG4gIGV4cG9ydCBsZXQgY29kZSA9ICcnO1xuICBleHBvcnQgbGV0IHByb3h5O1xuICBleHBvcnQgbGV0IGpzb247XG4gIGV4cG9ydCBsZXQgb3duZXJfcHJvcGVydGllcztcbiAgZXhwb3J0IGxldCBvd25lcjtcbiAgZXhwb3J0IGxldCBzYW5kYm94X3Byb3BzID0gJyc7XG5cbiAgY29uc3QgZGlzcGF0Y2ggPSBjcmVhdGVFdmVudERpc3BhdGNoZXIoKTtcblxuICBsZXQgaWZyYW1lO1xuXG4gIGxldCBwZW5kaW5nX2ltcG9ydHMgPSAwO1xuICBsZXQgcGVuZGluZyA9IGZhbHNlO1xuICBsZXQgZXJyb3I7XG5cbiAgbGV0IGxvZ3MgPSBbXTtcbiAgbGV0IGxvZ19ncm91cF9zdGFjayA9IFtdO1xuICBsZXQgY3VycmVudF9sb2dfZ3JvdXAgPSBsb2dzO1xuICBsZXQgbGFzdF9jb25zb2xlX2V2ZW50O1xuXG4gIG9uTW91bnQoKCkgPT4ge1xuICAgIHByb3h5ID0gbmV3IFByb3h5KGlmcmFtZSwge1xuICAgICAgb25fZmV0Y2hfcHJvZ3Jlc3M6IChwcm9ncmVzcykgPT4ge1xuICAgICAgICBwZW5kaW5nX2ltcG9ydHMgPSBwcm9ncmVzcztcbiAgICAgIH0sXG4gICAgICBvbl9lcnJvcjogKGV2ZW50KSA9PiB7XG4gICAgICAgIHB1c2hfbG9ncyh7IGxldmVsOiAnZXJyb3InLCBhcmdzOiBbZXZlbnQudmFsdWVdIH0pO1xuICAgICAgICBzaG93X2Vycm9yKGV2ZW50LnZhbHVlKTtcbiAgICAgIH0sXG4gICAgICBvbl91bmhhbmRsZWRfcmVqZWN0aW9uOiAoZXZlbnQpID0+IHtcbiAgICAgICAgbGV0IGVycm9yID0gZXZlbnQudmFsdWU7XG4gICAgICAgIGlmICh0eXBlb2YgZXJyb3IgPT09ICdzdHJpbmcnKSBlcnJvciA9IHsgbWVzc2FnZTogZXJyb3IgfTtcbiAgICAgICAgZXJyb3IubWVzc2FnZSA9ICdVbmNhdWdodCAoaW4gcHJvbWlzZSk6ICcgKyBlcnJvci5tZXNzYWdlO1xuICAgICAgICBwdXNoX2xvZ3MoeyBsZXZlbDogJ2Vycm9yJywgYXJnczogW2Vycm9yXSB9KTtcbiAgICAgICAgc2hvd19lcnJvcihlcnJvcik7XG4gICAgICB9LFxuICAgICAgb25fY29uc29sZTogKGxvZykgPT4ge1xuICAgICAgICBpZiAobG9nLmxldmVsID09PSAnY2xlYXInKSB7XG4gICAgICAgICAgY2xlYXJfbG9ncygpO1xuICAgICAgICAgIHB1c2hfbG9ncyhsb2cpO1xuICAgICAgICB9IGVsc2UgaWYgKGxvZy5kdXBsaWNhdGUpIHtcbiAgICAgICAgICBpbmNyZW1lbnRfZHVwbGljYXRlX2xvZygpO1xuICAgICAgICB9IGVsc2Uge1xuICAgICAgICAgIHB1c2hfbG9ncyhsb2cpO1xuICAgICAgICB9XG4gICAgICB9LFxuICAgICAgb25fY29uc29sZV9ncm91cDogKGFjdGlvbikgPT4ge1xuICAgICAgICBncm91cF9sb2dzKGFjdGlvbi5sYWJlbCwgZmFsc2UpO1xuICAgICAgfSxcbiAgICAgIG9uX2NvbnNvbGVfZ3JvdXBfZW5kOiAoKSA9PiB7XG4gICAgICAgIHVuZ3JvdXBfbG9ncygpO1xuICAgICAgfSxcbiAgICAgIG9uX2NvbnNvbGVfZ3JvdXBfY29sbGFwc2VkOiAoYWN0aW9uKSA9PiB7XG4gICAgICAgIGdyb3VwX2xvZ3MoYWN0aW9uLmxhYmVsLCB0cnVlKTtcbiAgICAgIH0sXG4gICAgfSk7XG5cbiAgICBpZnJhbWUuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsICgpID0+IHtcbiAgICAgIHByb3h5LmhhbmRsZV9saW5rcygpO1xuICAgICAgIWVycm9yICYmIGRpc3BhdGNoKCdsb2FkZWQnKTtcbiAgICB9KTtcblxuICAgIHJldHVybiAoKSA9PiB7XG4gICAgICBwcm94eS5kZXN0cm95KCk7XG4gICAgfTtcbiAgfSk7XG5cbiAgZnVuY3Rpb24gbWFrZURlcGVuZGVuY2llcygpIHtcbiAgICBpZiAoIWpzb24uaW50ZXJhY3RpdmVfbmZ0KSB7XG4gICAgICByZXR1cm4gJyc7XG4gICAgfVxuICAgIHJldHVybiB1dGlscy5tYWtlRGVwZW5kZW5jaWVzKGpzb24uaW50ZXJhY3RpdmVfbmZ0LmRlcGVuZGVuY2llcyk7XG4gIH1cblxuICBmdW5jdGlvbiBsb2FkUHJvcHMoKSB7XG4gICAgY29uc3QgcHJvcHMgPSB7fTtcbiAgICBpZiAoanNvbi5pbnRlcmFjdGl2ZV9uZnQpIHtcbiAgICAgIGlmIChBcnJheS5pc0FycmF5KGpzb24uaW50ZXJhY3RpdmVfbmZ0LnByb3BlcnRpZXMpKSB7XG4gICAgICAgIGxldCBvdmVycmlkZXIgPSB7fTtcbiAgICAgICAgaWYgKG93bmVyX3Byb3BlcnRpZXMgJiYgJ29iamVjdCcgPT09IHR5cGVvZiBvd25lcl9wcm9wZXJ0aWVzKSB7XG4gICAgICAgICAgb3ZlcnJpZGVyID0gb3duZXJfcHJvcGVydGllcztcbiAgICAgICAgfVxuXG4gICAgICAgIC8vIG5vIE9iamVjdC5hc3NpZ24gYmVjYXVzZSB3ZSBvbmx5IHdhbnQgZGVjbGFyZWQgcHJvcHMgdG8gYmUgc2V0XG4gICAgICAgIGZvciAoY29uc3QgcHJvcCBvZiBqc29uLmludGVyYWN0aXZlX25mdC5wcm9wZXJ0aWVzKSB7XG4gICAgICAgICAgcHJvcHNbcHJvcC5uYW1lXSA9IHByb3AudmFsdWU7XG4gICAgICAgICAgaWYgKHVuZGVmaW5lZCAhPT0gb3ZlcnJpZGVyW3Byb3AubmFtZV0pIHtcbiAgICAgICAgICAgIHByb3BzW3Byb3AubmFtZV0gPSBvdmVycmlkZXJbcHJvcC5uYW1lXTtcbiAgICAgICAgICB9XG4gICAgICAgIH1cbiAgICAgIH1cbiAgICB9XG5cbiAgICByZXR1cm4gcHJvcHM7XG4gIH1cblxuICBmdW5jdGlvbiByZXBsYWNlQ29kZShzcmNkb2MpIHtcbiAgICBsZXQgY29udGVudCA9IG1ha2VEZXBlbmRlbmNpZXMoKTtcblxuICAgIGNvbnN0IHByb3BzID0gbG9hZFByb3BzKCk7XG5cbiAgICBjb25zdCBpbmplY3RlZFByb3BzID0gYFxuICAgICAgd2luZG93LmNvbnRleHQucHJvcGVydGllcyA9IEpTT04ucGFyc2UoJyR7SlNPTi5zdHJpbmdpZnkocHJvcHMpfScpO1xuICAgIGA7XG5cbiAgICBjb25zdCBpbmplY3RlZEpTT04gPSBgXG4gICAgICB3aW5kb3cuY29udGV4dC5uZnRfanNvbiA9IEpTT04ucGFyc2UoJHtKU09OLnN0cmluZ2lmeShcbiAgICAgICAgSlNPTi5zdHJpbmdpZnkoanNvbilcbiAgICAgICl9KTtcbiAgICBgO1xuXG4gICAgY29uc3QgaW5qZWN0ZWRPd25lciA9IGB3aW5kb3cuY29udGV4dC5vd25lciA9ICR7SlNPTi5zdHJpbmdpZnkob3duZXIpfTtgO1xuXG4gICAgY29udGVudCArPSB1dGlscy5zY3JpcHRpZnkoYFxuICAgICAgLy8gc3BlY2lmaWMgcDUgYmVjYXVzZSBpdCdzIGNhdXNpbmcgdHJvdWJsZXMuXG4gICAgICBpZiAodHlwZW9mIHA1ICE9PSAndW5kZWZpbmVkJyAmJiBwNS5kaXNhYmxlRnJpZW5kbHlFcnJvcnMpIHtcbiAgICAgICAgcDUuZGlzYWJsZUZyaWVuZGx5RXJyb3JzID0gdHJ1ZTtcbiAgICAgICAgbmV3IHA1KCk7XG4gICAgICB9XG5cbiAgICAgICR7aW5qZWN0ZWRQcm9wc31cbiAgICAgICR7aW5qZWN0ZWRKU09OfVxuICAgICAgJHtpbmplY3RlZE93bmVyfVxuICAgIGApO1xuXG4gICAgY29udGVudCArPSBjb2RlO1xuXG4gICAgcmV0dXJuIHNyY2RvYy5yZXBsYWNlKCc8IS0tIE5GVENPREUgLS0+JywgY29udGVudCk7XG4gIH1cblxuICBmdW5jdGlvbiBzaG93X2Vycm9yKGUpIHtcbiAgICBlcnJvciA9IGU7XG4gICAgZGlzcGF0Y2goJ2Vycm9yJywgZSk7XG4gIH1cblxuICBmdW5jdGlvbiBwdXNoX2xvZ3MobG9nKSB7XG4gICAgY3VycmVudF9sb2dfZ3JvdXAucHVzaCgobGFzdF9jb25zb2xlX2V2ZW50ID0gbG9nKSk7XG4gICAgbG9ncyA9IGxvZ3M7XG4gIH1cblxuICBmdW5jdGlvbiBncm91cF9sb2dzKGxhYmVsLCBjb2xsYXBzZWQpIHtcbiAgICBjb25zdCBncm91cF9sb2cgPSB7IGxldmVsOiAnZ3JvdXAnLCBsYWJlbCwgY29sbGFwc2VkLCBsb2dzOiBbXSB9O1xuICAgIGN1cnJlbnRfbG9nX2dyb3VwLnB1c2goZ3JvdXBfbG9nKTtcbiAgICBsb2dfZ3JvdXBfc3RhY2sucHVzaChjdXJyZW50X2xvZ19ncm91cCk7XG4gICAgY3VycmVudF9sb2dfZ3JvdXAgPSBncm91cF9sb2cubG9ncztcbiAgICBsb2dzID0gbG9ncztcbiAgfVxuXG4gIGZ1bmN0aW9uIHVuZ3JvdXBfbG9ncygpIHtcbiAgICBjdXJyZW50X2xvZ19ncm91cCA9IGxvZ19ncm91cF9zdGFjay5wb3AoKTtcbiAgfVxuXG4gIGZ1bmN0aW9uIGluY3JlbWVudF9kdXBsaWNhdGVfbG9nKCkge1xuICAgIGNvbnN0IGxhc3RfbG9nID0gY3VycmVudF9sb2dfZ3JvdXBbY3VycmVudF9sb2dfZ3JvdXAubGVuZ3RoIC0gMV07XG5cbiAgICBpZiAobGFzdF9sb2cpIHtcbiAgICAgIGxhc3RfbG9nLmNvdW50ID0gKGxhc3RfbG9nLmNvdW50IHx8IDEpICsgMTtcbiAgICAgIGxvZ3MgPSBsb2dzO1xuICAgIH0gZWxzZSB7XG4gICAgICBsYXN0X2NvbnNvbGVfZXZlbnQuY291bnQgPSAxO1xuICAgICAgcHVzaF9sb2dzKGxhc3RfY29uc29sZV9ldmVudCk7XG4gICAgfVxuICB9XG5cbiAgZnVuY3Rpb24gY2xlYXJfbG9ncygpIHtcbiAgICBjdXJyZW50X2xvZ19ncm91cCA9IGxvZ3MgPSBbXTtcbiAgfVxuPC9zY3JpcHQ+XG5cbjxzdHlsZT5cbiAgLmJleW9uZG5mdF9fc2FuZGJveCB7XG4gICAgYmFja2dyb3VuZC1jb2xvcjogd2hpdGU7XG4gICAgYm9yZGVyOiBub25lO1xuICAgIHdpZHRoOiAxMDAlO1xuICAgIGhlaWdodDogMTAwJTtcbiAgICBwb3NpdGlvbjogcmVsYXRpdmU7XG4gIH1cblxuICBpZnJhbWUge1xuICAgIHdpZHRoOiAxMDAlO1xuICAgIGhlaWdodDogMTAwJTtcbiAgICBib3JkZXI6IG5vbmU7XG4gICAgZGlzcGxheTogYmxvY2s7XG4gIH1cblxuICAuZ3JleWVkLW91dCB7XG4gICAgZmlsdGVyOiBncmF5c2NhbGUoNTAlKSBibHVyKDFweCk7XG4gICAgb3BhY2l0eTogMC4yNTtcbiAgfVxuXG4gIC5iZXlvbmRuZnRfX3NhbmRib3hfX2Vycm9yIHtcbiAgICBmb250LXNpemU6IDAuOWVtO1xuICAgIHBvc2l0aW9uOiBhYnNvbHV0ZTtcbiAgICB0b3A6IDA7XG4gICAgbGVmdDogMDtcbiAgICBwYWRkaW5nOiA1cHg7XG4gIH1cbjwvc3R5bGU+XG5cbjxkaXYgY2xhc3M9XCJiZXlvbmRuZnRfX3NhbmRib3hcIj5cbiAgPGlmcmFtZVxuICAgIHRpdGxlPVwiU2FuZGJveFwiXG4gICAgYmluZDp0aGlzPXtpZnJhbWV9XG4gICAgc2FuZGJveD17YGFsbG93LXNjcmlwdHMgYWxsb3ctcG9pbnRlci1sb2NrIGFsbG93LXBvcHVwcyAke3NhbmRib3hfcHJvcHN9YH1cbiAgICBjbGFzczpncmV5ZWQtb3V0PXtlcnJvciB8fCBwZW5kaW5nIHx8IHBlbmRpbmdfaW1wb3J0c31cbiAgICBzcmNkb2M9e3JlcGxhY2VDb2RlKHNyY2RvYyl9IC8+XG4gIHsjaWYgZXJyb3J9XG4gICAgPHN0cm9uZyBjbGFzcz1cImJleW9uZG5mdF9fc2FuZGJveF9fZXJyb3JcIj5cbiAgICAgIDxlbT5Tb3JyeSwgYW4gZXJyb3Igb2NjdXJlZCB3aGlsZSBleGVjdXRpbmcgdGhlIE5GVC48L2VtPlxuICAgIDwvc3Ryb25nPlxuICB7L2lmfVxuPC9kaXY+XG4iXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBaUxFLG1CQUFtQixlQUFDLENBQUMsQUFDbkIsZ0JBQWdCLENBQUUsS0FBSyxDQUN2QixNQUFNLENBQUUsSUFBSSxDQUNaLEtBQUssQ0FBRSxJQUFJLENBQ1gsTUFBTSxDQUFFLElBQUksQ0FDWixRQUFRLENBQUUsUUFBUSxBQUNwQixDQUFDLEFBRUQsTUFBTSxlQUFDLENBQUMsQUFDTixLQUFLLENBQUUsSUFBSSxDQUNYLE1BQU0sQ0FBRSxJQUFJLENBQ1osTUFBTSxDQUFFLElBQUksQ0FDWixPQUFPLENBQUUsS0FBSyxBQUNoQixDQUFDLEFBRUQsV0FBVyxlQUFDLENBQUMsQUFDWCxNQUFNLENBQUUsVUFBVSxHQUFHLENBQUMsQ0FBQyxLQUFLLEdBQUcsQ0FBQyxDQUNoQyxPQUFPLENBQUUsSUFBSSxBQUNmLENBQUMsQUFFRCwwQkFBMEIsZUFBQyxDQUFDLEFBQzFCLFNBQVMsQ0FBRSxLQUFLLENBQ2hCLFFBQVEsQ0FBRSxRQUFRLENBQ2xCLEdBQUcsQ0FBRSxDQUFDLENBQ04sSUFBSSxDQUFFLENBQUMsQ0FDUCxPQUFPLENBQUUsR0FBRyxBQUNkLENBQUMifQ== */";
+	append_dev(document.head, style);
 }
 
-// (210:2) {#if error}
+// (214:2) {#if error}
 function create_if_block(ctx) {
 	let strong;
+	let em;
 
-	return {
-		c() {
+	const block = {
+		c: function create() {
 			strong = element("strong");
-			strong.innerHTML = `<em>Sorry, an error occured while executing the NFT.</em>`;
-			attr(strong, "class", "beyondnft__sandbox__error svelte-1bwdt9k");
+			em = element("em");
+			em.textContent = "Sorry, an error occured while executing the NFT.";
+			add_location(em, file, 215, 6, 5076);
+			attr_dev(strong, "class", "beyondnft__sandbox__error svelte-1bwdt9k");
+			add_location(strong, file, 214, 4, 5027);
 		},
-		m(target, anchor) {
-			insert(target, strong, anchor);
+		m: function mount(target, anchor) {
+			insert_dev(target, strong, anchor);
+			append_dev(strong, em);
 		},
-		d(detaching) {
-			if (detaching) detach(strong);
+		d: function destroy(detaching) {
+			if (detaching) detach_dev(strong);
 		}
 	};
+
+	dispatch_dev("SvelteRegisterBlock", {
+		block,
+		id: create_if_block.name,
+		type: "if",
+		source: "(214:2) {#if error}",
+		ctx
+	});
+
+	return block;
 }
 
 function create_fragment(ctx) {
@@ -497,40 +578,45 @@ function create_fragment(ctx) {
 	let iframe_1_sandbox_value;
 	let iframe_1_srcdoc_value;
 	let t;
-	let if_block = /*error*/ ctx[3] && create_if_block();
+	let if_block = /*error*/ ctx[3] && create_if_block(ctx);
 
-	return {
-		c() {
+	const block = {
+		c: function create() {
 			div = element("div");
 			iframe_1 = element("iframe");
 			t = space();
 			if (if_block) if_block.c();
-			attr(iframe_1, "title", "Sandbox");
-			attr(iframe_1, "sandbox", iframe_1_sandbox_value = `allow-scripts allow-pointer-lock allow-popups ${/*sandbox_props*/ ctx[0]}`);
-			attr(iframe_1, "srcdoc", iframe_1_srcdoc_value = /*replaceCode*/ ctx[4](srcdoc));
-			attr(iframe_1, "class", "svelte-1bwdt9k");
-			toggle_class(iframe_1, "greyed-out", /*error*/ ctx[3] || pending || /*pending_imports*/ ctx[2]);
-			attr(div, "class", "beyondnft__sandbox svelte-1bwdt9k");
+			attr_dev(iframe_1, "title", "Sandbox");
+			attr_dev(iframe_1, "sandbox", iframe_1_sandbox_value = `allow-scripts allow-pointer-lock allow-popups ${/*sandbox_props*/ ctx[0]}`);
+			attr_dev(iframe_1, "srcdoc", iframe_1_srcdoc_value = /*replaceCode*/ ctx[5](srcdoc));
+			attr_dev(iframe_1, "class", "svelte-1bwdt9k");
+			toggle_class(iframe_1, "greyed-out", /*error*/ ctx[3] || /*pending*/ ctx[4] || /*pending_imports*/ ctx[2]);
+			add_location(iframe_1, file, 207, 2, 4784);
+			attr_dev(div, "class", "beyondnft__sandbox svelte-1bwdt9k");
+			add_location(div, file, 206, 0, 4749);
 		},
-		m(target, anchor) {
-			insert(target, div, anchor);
-			append(div, iframe_1);
-			/*iframe_1_binding*/ ctx[9](iframe_1);
-			append(div, t);
+		l: function claim(nodes) {
+			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+		},
+		m: function mount(target, anchor) {
+			insert_dev(target, div, anchor);
+			append_dev(div, iframe_1);
+			/*iframe_1_binding*/ ctx[11](iframe_1);
+			append_dev(div, t);
 			if (if_block) if_block.m(div, null);
 		},
-		p(ctx, [dirty]) {
+		p: function update(ctx, [dirty]) {
 			if (dirty & /*sandbox_props*/ 1 && iframe_1_sandbox_value !== (iframe_1_sandbox_value = `allow-scripts allow-pointer-lock allow-popups ${/*sandbox_props*/ ctx[0]}`)) {
-				attr(iframe_1, "sandbox", iframe_1_sandbox_value);
+				attr_dev(iframe_1, "sandbox", iframe_1_sandbox_value);
 			}
 
-			if (dirty & /*error, pending, pending_imports*/ 12) {
-				toggle_class(iframe_1, "greyed-out", /*error*/ ctx[3] || pending || /*pending_imports*/ ctx[2]);
+			if (dirty & /*error, pending, pending_imports*/ 28) {
+				toggle_class(iframe_1, "greyed-out", /*error*/ ctx[3] || /*pending*/ ctx[4] || /*pending_imports*/ ctx[2]);
 			}
 
 			if (/*error*/ ctx[3]) {
 				if (if_block) ; else {
-					if_block = create_if_block();
+					if_block = create_if_block(ctx);
 					if_block.c();
 					if_block.m(div, null);
 				}
@@ -541,25 +627,37 @@ function create_fragment(ctx) {
 		},
 		i: noop,
 		o: noop,
-		d(detaching) {
-			if (detaching) detach(div);
-			/*iframe_1_binding*/ ctx[9](null);
+		d: function destroy(detaching) {
+			if (detaching) detach_dev(div);
+			/*iframe_1_binding*/ ctx[11](null);
 			if (if_block) if_block.d();
 		}
 	};
+
+	dispatch_dev("SvelteRegisterBlock", {
+		block,
+		id: create_fragment.name,
+		type: "component",
+		source: "",
+		ctx
+	});
+
+	return block;
 }
 
-let pending = false;
-
 function instance($$self, $$props, $$invalidate) {
+	let { $$slots: slots = {}, $$scope } = $$props;
+	validate_slots("Viewer", slots, []);
 	let { code = "" } = $$props;
 	let { proxy } = $$props;
 	let { json } = $$props;
 	let { owner_properties } = $$props;
+	let { owner } = $$props;
 	let { sandbox_props = "" } = $$props;
 	const dispatch = createEventDispatcher();
 	let iframe;
 	let pending_imports = 0;
+	let pending = false;
 	let error;
 	let logs = [];
 	let log_group_stack = [];
@@ -567,7 +665,7 @@ function instance($$self, $$props, $$invalidate) {
 	let last_console_event;
 
 	onMount(() => {
-		$$invalidate(5, proxy = new Proxy(iframe,
+		$$invalidate(6, proxy = new Proxy(iframe,
 		{
 				on_fetch_progress: progress => {
 					$$invalidate(2, pending_imports = progress);
@@ -659,6 +757,8 @@ function instance($$self, $$props, $$invalidate) {
       window.context.nft_json = JSON.parse(${JSON.stringify(JSON.stringify(json))});
     `;
 
+		const injectedOwner = `window.context.owner = ${JSON.stringify(owner)};`;
+
 		content += scriptify(`
       // specific p5 because it's causing troubles.
       if (typeof p5 !== 'undefined' && p5.disableFriendlyErrors) {
@@ -668,6 +768,7 @@ function instance($$self, $$props, $$invalidate) {
 
       ${injectedProps}
       ${injectedJSON}
+      ${injectedOwner}
     `);
 
 		content += code;
@@ -718,6 +819,12 @@ function instance($$self, $$props, $$invalidate) {
 		current_log_group = logs = [];
 	}
 
+	const writable_props = ["code", "proxy", "json", "owner_properties", "owner", "sandbox_props"];
+
+	Object.keys($$props).forEach(key => {
+		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== "$$") console.warn(`<Viewer> was created with unknown prop '${key}'`);
+	});
+
 	function iframe_1_binding($$value) {
 		binding_callbacks[$$value ? "unshift" : "push"](() => {
 			iframe = $$value;
@@ -726,125 +833,282 @@ function instance($$self, $$props, $$invalidate) {
 	}
 
 	$$self.$$set = $$props => {
-		if ("code" in $$props) $$invalidate(6, code = $$props.code);
-		if ("proxy" in $$props) $$invalidate(5, proxy = $$props.proxy);
-		if ("json" in $$props) $$invalidate(7, json = $$props.json);
-		if ("owner_properties" in $$props) $$invalidate(8, owner_properties = $$props.owner_properties);
+		if ("code" in $$props) $$invalidate(7, code = $$props.code);
+		if ("proxy" in $$props) $$invalidate(6, proxy = $$props.proxy);
+		if ("json" in $$props) $$invalidate(8, json = $$props.json);
+		if ("owner_properties" in $$props) $$invalidate(9, owner_properties = $$props.owner_properties);
+		if ("owner" in $$props) $$invalidate(10, owner = $$props.owner);
 		if ("sandbox_props" in $$props) $$invalidate(0, sandbox_props = $$props.sandbox_props);
 	};
+
+	$$self.$capture_state = () => ({
+		createEventDispatcher,
+		onMount,
+		Proxy,
+		srcdoc,
+		utils,
+		code,
+		proxy,
+		json,
+		owner_properties,
+		owner,
+		sandbox_props,
+		dispatch,
+		iframe,
+		pending_imports,
+		pending,
+		error,
+		logs,
+		log_group_stack,
+		current_log_group,
+		last_console_event,
+		makeDependencies: makeDependencies$1,
+		loadProps,
+		replaceCode,
+		show_error,
+		push_logs,
+		group_logs,
+		ungroup_logs,
+		increment_duplicate_log,
+		clear_logs
+	});
+
+	$$self.$inject_state = $$props => {
+		if ("code" in $$props) $$invalidate(7, code = $$props.code);
+		if ("proxy" in $$props) $$invalidate(6, proxy = $$props.proxy);
+		if ("json" in $$props) $$invalidate(8, json = $$props.json);
+		if ("owner_properties" in $$props) $$invalidate(9, owner_properties = $$props.owner_properties);
+		if ("owner" in $$props) $$invalidate(10, owner = $$props.owner);
+		if ("sandbox_props" in $$props) $$invalidate(0, sandbox_props = $$props.sandbox_props);
+		if ("iframe" in $$props) $$invalidate(1, iframe = $$props.iframe);
+		if ("pending_imports" in $$props) $$invalidate(2, pending_imports = $$props.pending_imports);
+		if ("pending" in $$props) $$invalidate(4, pending = $$props.pending);
+		if ("error" in $$props) $$invalidate(3, error = $$props.error);
+		if ("logs" in $$props) logs = $$props.logs;
+		if ("log_group_stack" in $$props) log_group_stack = $$props.log_group_stack;
+		if ("current_log_group" in $$props) current_log_group = $$props.current_log_group;
+		if ("last_console_event" in $$props) last_console_event = $$props.last_console_event;
+	};
+
+	if ($$props && "$$inject" in $$props) {
+		$$self.$inject_state($$props.$$inject);
+	}
 
 	return [
 		sandbox_props,
 		iframe,
 		pending_imports,
 		error,
+		pending,
 		replaceCode,
 		proxy,
 		code,
 		json,
 		owner_properties,
+		owner,
 		iframe_1_binding
 	];
 }
 
-class Viewer extends SvelteComponent {
+class Viewer extends SvelteComponentDev {
 	constructor(options) {
-		super();
+		super(options);
 		if (!document.getElementById("svelte-1bwdt9k-style")) add_css();
 
 		init(this, options, instance, create_fragment, safe_not_equal, {
-			code: 6,
-			proxy: 5,
-			json: 7,
-			owner_properties: 8,
+			code: 7,
+			proxy: 6,
+			json: 8,
+			owner_properties: 9,
+			owner: 10,
 			sandbox_props: 0
 		});
+
+		dispatch_dev("SvelteRegisterComponent", {
+			component: this,
+			tagName: "Viewer",
+			options,
+			id: create_fragment.name
+		});
+
+		const { ctx } = this.$$;
+		const props = options.props || {};
+
+		if (/*proxy*/ ctx[6] === undefined && !("proxy" in props)) {
+			console.warn("<Viewer> was created without expected prop 'proxy'");
+		}
+
+		if (/*json*/ ctx[8] === undefined && !("json" in props)) {
+			console.warn("<Viewer> was created without expected prop 'json'");
+		}
+
+		if (/*owner_properties*/ ctx[9] === undefined && !("owner_properties" in props)) {
+			console.warn("<Viewer> was created without expected prop 'owner_properties'");
+		}
+
+		if (/*owner*/ ctx[10] === undefined && !("owner" in props)) {
+			console.warn("<Viewer> was created without expected prop 'owner'");
+		}
+	}
+
+	get code() {
+		throw new Error("<Viewer>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+	}
+
+	set code(value) {
+		throw new Error("<Viewer>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+	}
+
+	get proxy() {
+		throw new Error("<Viewer>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+	}
+
+	set proxy(value) {
+		throw new Error("<Viewer>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+	}
+
+	get json() {
+		throw new Error("<Viewer>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+	}
+
+	set json(value) {
+		throw new Error("<Viewer>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+	}
+
+	get owner_properties() {
+		throw new Error("<Viewer>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+	}
+
+	set owner_properties(value) {
+		throw new Error("<Viewer>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+	}
+
+	get owner() {
+		throw new Error("<Viewer>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+	}
+
+	set owner(value) {
+		throw new Error("<Viewer>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+	}
+
+	get sandbox_props() {
+		throw new Error("<Viewer>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+	}
+
+	set sandbox_props(value) {
+		throw new Error("<Viewer>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
 	}
 }
 
 /* src/Sandbox.svelte generated by Svelte v3.29.0 */
 
+const { Error: Error_1 } = globals;
+
+// (79:0) {:else}
 function create_else_block(ctx) {
 	let t;
 
-	return {
-		c() {
+	const block = {
+		c: function create() {
 			t = text("Loading...");
 		},
-		m(target, anchor) {
-			insert(target, t, anchor);
+		m: function mount(target, anchor) {
+			insert_dev(target, t, anchor);
 		},
 		p: noop,
 		i: noop,
 		o: noop,
-		d(detaching) {
-			if (detaching) detach(t);
+		d: function destroy(detaching) {
+			if (detaching) detach_dev(t);
 		}
 	};
+
+	dispatch_dev("SvelteRegisterBlock", {
+		block,
+		id: create_else_block.name,
+		type: "else",
+		source: "(79:0) {:else}",
+		ctx
+	});
+
+	return block;
 }
 
-// (49:0) {#if code}
+// (68:0) {#if code}
 function create_if_block$1(ctx) {
 	let viewer;
 	let updating_proxy;
 	let current;
 
 	function viewer_proxy_binding(value) {
-		/*viewer_proxy_binding*/ ctx[6].call(null, value);
+		/*viewer_proxy_binding*/ ctx[7].call(null, value);
 	}
 
 	let viewer_props = {
 		code: /*code*/ ctx[1],
 		owner_properties: /*owner_properties*/ ctx[2],
-		sandbox_props: /*sandbox_props*/ ctx[3],
+		sandbox_props: /*sandbox_props*/ ctx[4],
+		owner: /*owner*/ ctx[3],
 		json: /*data*/ ctx[0]
 	};
 
-	if (/*proxy*/ ctx[4] !== void 0) {
-		viewer_props.proxy = /*proxy*/ ctx[4];
+	if (/*proxy*/ ctx[5] !== void 0) {
+		viewer_props.proxy = /*proxy*/ ctx[5];
 	}
 
-	viewer = new Viewer({ props: viewer_props });
+	viewer = new Viewer({ props: viewer_props, $$inline: true });
 	binding_callbacks.push(() => bind(viewer, "proxy", viewer_proxy_binding));
-	viewer.$on("loaded", /*loaded_handler*/ ctx[7]);
-	viewer.$on("error", /*error_handler*/ ctx[8]);
+	viewer.$on("loaded", /*loaded_handler*/ ctx[8]);
+	viewer.$on("error", /*error_handler*/ ctx[9]);
+	viewer.$on("warning", /*warning_handler*/ ctx[10]);
 
-	return {
-		c() {
+	const block = {
+		c: function create() {
 			create_component(viewer.$$.fragment);
 		},
-		m(target, anchor) {
+		m: function mount(target, anchor) {
 			mount_component(viewer, target, anchor);
 			current = true;
 		},
-		p(ctx, dirty) {
+		p: function update(ctx, dirty) {
 			const viewer_changes = {};
 			if (dirty & /*code*/ 2) viewer_changes.code = /*code*/ ctx[1];
 			if (dirty & /*owner_properties*/ 4) viewer_changes.owner_properties = /*owner_properties*/ ctx[2];
-			if (dirty & /*sandbox_props*/ 8) viewer_changes.sandbox_props = /*sandbox_props*/ ctx[3];
+			if (dirty & /*sandbox_props*/ 16) viewer_changes.sandbox_props = /*sandbox_props*/ ctx[4];
+			if (dirty & /*owner*/ 8) viewer_changes.owner = /*owner*/ ctx[3];
 			if (dirty & /*data*/ 1) viewer_changes.json = /*data*/ ctx[0];
 
-			if (!updating_proxy && dirty & /*proxy*/ 16) {
+			if (!updating_proxy && dirty & /*proxy*/ 32) {
 				updating_proxy = true;
-				viewer_changes.proxy = /*proxy*/ ctx[4];
+				viewer_changes.proxy = /*proxy*/ ctx[5];
 				add_flush_callback(() => updating_proxy = false);
 			}
 
 			viewer.$set(viewer_changes);
 		},
-		i(local) {
+		i: function intro(local) {
 			if (current) return;
 			transition_in(viewer.$$.fragment, local);
 			current = true;
 		},
-		o(local) {
+		o: function outro(local) {
 			transition_out(viewer.$$.fragment, local);
 			current = false;
 		},
-		d(detaching) {
+		d: function destroy(detaching) {
 			destroy_component(viewer, detaching);
 		}
 	};
+
+	dispatch_dev("SvelteRegisterBlock", {
+		block,
+		id: create_if_block$1.name,
+		type: "if",
+		source: "(68:0) {#if code}",
+		ctx
+	});
+
+	return block;
 }
 
 function create_fragment$1(ctx) {
@@ -863,17 +1127,20 @@ function create_fragment$1(ctx) {
 	current_block_type_index = select_block_type(ctx);
 	if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
 
-	return {
-		c() {
+	const block = {
+		c: function create() {
 			if_block.c();
 			if_block_anchor = empty();
 		},
-		m(target, anchor) {
+		l: function claim(nodes) {
+			throw new Error_1("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+		},
+		m: function mount(target, anchor) {
 			if_blocks[current_block_type_index].m(target, anchor);
-			insert(target, if_block_anchor, anchor);
+			insert_dev(target, if_block_anchor, anchor);
 			current = true;
 		},
-		p(ctx, [dirty]) {
+		p: function update(ctx, [dirty]) {
 			let previous_block_index = current_block_type_index;
 			current_block_type_index = select_block_type(ctx);
 
@@ -898,27 +1165,40 @@ function create_fragment$1(ctx) {
 				if_block.m(if_block_anchor.parentNode, if_block_anchor);
 			}
 		},
-		i(local) {
+		i: function intro(local) {
 			if (current) return;
 			transition_in(if_block);
 			current = true;
 		},
-		o(local) {
+		o: function outro(local) {
 			transition_out(if_block);
 			current = false;
 		},
-		d(detaching) {
+		d: function destroy(detaching) {
 			if_blocks[current_block_type_index].d(detaching);
-			if (detaching) detach(if_block_anchor);
+			if (detaching) detach_dev(if_block_anchor);
 		}
 	};
+
+	dispatch_dev("SvelteRegisterBlock", {
+		block,
+		id: create_fragment$1.name,
+		type: "component",
+		source: "",
+		ctx
+	});
+
+	return block;
 }
 
 function instance$1($$self, $$props, $$invalidate) {
+	let { $$slots: slots = {}, $$scope } = $$props;
+	validate_slots("Sandbox", slots, []);
 	const dispatch = createEventDispatcher();
 	let { data = {} } = $$props;
 	let { code = "" } = $$props;
-	let { owner_properties = [] } = $$props;
+	let { owner_properties = {} } = $$props;
+	let { owner = "0x0000000000000000000000000000000000000000" } = $$props;
 	let { sandbox_props = "" } = $$props;
 	let proxy = null;
 
@@ -926,27 +1206,49 @@ function instance$1($$self, $$props, $$invalidate) {
 		return proxy;
 	}
 
-	if (!code && data.interactive_nft) {
-		if (data.interactive_nft.code) {
-			code = data.interactive_nft.code;
+	onMount(async () => {
+		// first fetch owner_properties if it's an URI
+		if (owner_properties) {
+			if ("string" === typeof owner_properties) {
+				await fetch(owner_properties).then(res => res.json()).then(_owner_properties => $$invalidate(2, owner_properties = _owner_properties)).catch(e => {
+					dispatch("warning", `Error while fetching owner_properties on ${owner_properties}.
+            Setting owner_properties to default.`);
 
-			// so it won't be a problem when JSON.stringified
-			// and we don't need it in the code itself
-			data.interactive_nft.code = null;
-		} else if (data.interactive_nft.code_uri) {
-			fetch(data.interactive_nft.code_uri).then(res => res.text()).then(_code => $$invalidate(1, code = _code)).catch(e => {
-				dispatch("Error", new Error(`Error while fetching ${data.interactive_nft.code_uri}`));
-			});
-		} else {
+					$$invalidate(2, owner_properties = {});
+				});
+			}
+		}
+
+		// get code from interactive_nft
+		if (!code && data.interactive_nft) {
+			if (data.interactive_nft.code) {
+				$$invalidate(1, code = data.interactive_nft.code);
+
+				// if the code is in the interactive_nft property (not recommended)
+				// we delete it because it might be a problem when we pass this object to the iframe
+				// because we have to stringify it
+				$$invalidate(0, data.interactive_nft.code = null, data);
+			} else if (data.interactive_nft.code_uri) {
+				await fetch(data.interactive_nft.code_uri).then(res => res.text()).then(_code => $$invalidate(1, code = _code)).catch(e => {
+					dispatch("Error", new Error(`Error while fetching ${data.interactive_nft.code_uri}`));
+				});
+			}
+		}
+
+		if (!code) {
 			dispatch("Error", new Error("You need to provide code for this NFT to run"));
 		}
-	} else {
-		dispatch("Error", new Error("You need to provide code for this NFT to run"));
-	}
+	});
+
+	const writable_props = ["data", "code", "owner_properties", "owner", "sandbox_props"];
+
+	Object.keys($$props).forEach(key => {
+		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== "$$") console.warn(`<Sandbox> was created with unknown prop '${key}'`);
+	});
 
 	function viewer_proxy_binding(value) {
 		proxy = value;
-		$$invalidate(4, proxy);
+		$$invalidate(5, proxy);
 	}
 
 	function loaded_handler(event) {
@@ -957,41 +1259,127 @@ function instance$1($$self, $$props, $$invalidate) {
 		bubble($$self, event);
 	}
 
+	function warning_handler(event) {
+		bubble($$self, event);
+	}
+
 	$$self.$$set = $$props => {
 		if ("data" in $$props) $$invalidate(0, data = $$props.data);
 		if ("code" in $$props) $$invalidate(1, code = $$props.code);
 		if ("owner_properties" in $$props) $$invalidate(2, owner_properties = $$props.owner_properties);
-		if ("sandbox_props" in $$props) $$invalidate(3, sandbox_props = $$props.sandbox_props);
+		if ("owner" in $$props) $$invalidate(3, owner = $$props.owner);
+		if ("sandbox_props" in $$props) $$invalidate(4, sandbox_props = $$props.sandbox_props);
 	};
+
+	$$self.$capture_state = () => ({
+		createEventDispatcher,
+		onMount,
+		Viewer,
+		dispatch,
+		data,
+		code,
+		owner_properties,
+		owner,
+		sandbox_props,
+		proxy,
+		getProxy
+	});
+
+	$$self.$inject_state = $$props => {
+		if ("data" in $$props) $$invalidate(0, data = $$props.data);
+		if ("code" in $$props) $$invalidate(1, code = $$props.code);
+		if ("owner_properties" in $$props) $$invalidate(2, owner_properties = $$props.owner_properties);
+		if ("owner" in $$props) $$invalidate(3, owner = $$props.owner);
+		if ("sandbox_props" in $$props) $$invalidate(4, sandbox_props = $$props.sandbox_props);
+		if ("proxy" in $$props) $$invalidate(5, proxy = $$props.proxy);
+	};
+
+	if ($$props && "$$inject" in $$props) {
+		$$self.$inject_state($$props.$$inject);
+	}
 
 	return [
 		data,
 		code,
 		owner_properties,
+		owner,
 		sandbox_props,
 		proxy,
 		getProxy,
 		viewer_proxy_binding,
 		loaded_handler,
-		error_handler
+		error_handler,
+		warning_handler
 	];
 }
 
-class Sandbox extends SvelteComponent {
+class Sandbox extends SvelteComponentDev {
 	constructor(options) {
-		super();
+		super(options);
 
 		init(this, options, instance$1, create_fragment$1, safe_not_equal, {
 			data: 0,
 			code: 1,
 			owner_properties: 2,
-			sandbox_props: 3,
-			getProxy: 5
+			owner: 3,
+			sandbox_props: 4,
+			getProxy: 6
+		});
+
+		dispatch_dev("SvelteRegisterComponent", {
+			component: this,
+			tagName: "Sandbox",
+			options,
+			id: create_fragment$1.name
 		});
 	}
 
+	get data() {
+		throw new Error_1("<Sandbox>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+	}
+
+	set data(value) {
+		throw new Error_1("<Sandbox>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+	}
+
+	get code() {
+		throw new Error_1("<Sandbox>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+	}
+
+	set code(value) {
+		throw new Error_1("<Sandbox>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+	}
+
+	get owner_properties() {
+		throw new Error_1("<Sandbox>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+	}
+
+	set owner_properties(value) {
+		throw new Error_1("<Sandbox>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+	}
+
+	get owner() {
+		throw new Error_1("<Sandbox>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+	}
+
+	set owner(value) {
+		throw new Error_1("<Sandbox>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+	}
+
+	get sandbox_props() {
+		throw new Error_1("<Sandbox>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+	}
+
+	set sandbox_props(value) {
+		throw new Error_1("<Sandbox>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+	}
+
 	get getProxy() {
-		return this.$$.ctx[5];
+		return this.$$.ctx[6];
+	}
+
+	set getProxy(value) {
+		throw new Error_1("<Sandbox>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
 	}
 }
 

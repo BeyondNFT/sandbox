@@ -1,5 +1,5 @@
 <script>
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
 
   import Viewer from './Output/Viewer.svelte';
 
@@ -7,7 +7,8 @@
 
   export let data = {};
   export let code = '';
-  export let owner_properties = [];
+  export let owner_properties = {};
+  export let owner = '0x0000000000000000000000000000000000000000';
   export let sandbox_props = '';
 
   let proxy = null;
@@ -16,34 +17,52 @@
     return proxy;
   }
 
-  if (!code && data.interactive_nft) {
-    if (data.interactive_nft.code) {
-      code = data.interactive_nft.code;
-      // so it won't be a problem when JSON.stringified
-      // and we don't need it in the code itself
-      data.interactive_nft.code = null;
-    } else if (data.interactive_nft.code_uri) {
-      fetch(data.interactive_nft.code_uri)
-        .then((res) => res.text())
-        .then((_code) => (code = _code))
-        .catch((e) => {
-          dispatch(
-            'Error',
-            new Error(`Error while fetching ${data.interactive_nft.code_uri}`)
-          );
-        });
-    } else {
+  onMount(async () => {
+    // first fetch owner_properties if it's an URI
+    if (owner_properties) {
+      if ('string' === typeof owner_properties) {
+        await fetch(owner_properties)
+          .then((res) => res.json())
+          .then((_owner_properties) => (owner_properties = _owner_properties))
+          .catch((e) => {
+            dispatch(
+              'warning',
+              `Error while fetching owner_properties on ${owner_properties}.
+            Setting owner_properties to default.`
+            );
+            owner_properties = {};
+          });
+      }
+    }
+
+    // get code from interactive_nft
+    if (!code && data.interactive_nft) {
+      if (data.interactive_nft.code) {
+        code = data.interactive_nft.code;
+        // if the code is in the interactive_nft property (not recommended)
+        // we delete it because it might be a problem when we pass this object to the iframe
+        // because we have to stringify it
+        data.interactive_nft.code = null;
+      } else if (data.interactive_nft.code_uri) {
+        await fetch(data.interactive_nft.code_uri)
+          .then((res) => res.text())
+          .then((_code) => (code = _code))
+          .catch((e) => {
+            dispatch(
+              'Error',
+              new Error(`Error while fetching ${data.interactive_nft.code_uri}`)
+            );
+          });
+      }
+    }
+
+    if (!code) {
       dispatch(
         'Error',
         new Error('You need to provide code for this NFT to run')
       );
     }
-  } else {
-    dispatch(
-      'Error',
-      new Error('You need to provide code for this NFT to run')
-    );
-  }
+  });
 </script>
 
 {#if code}
@@ -51,8 +70,10 @@
     {code}
     {owner_properties}
     {sandbox_props}
+    {owner}
     json={data}
     bind:proxy
     on:loaded
-    on:error />
+    on:error
+    on:warning />
 {:else}Loading...{/if}

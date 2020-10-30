@@ -9,6 +9,7 @@
   export let proxy;
   export let json;
   export let owner_properties;
+  export let owner;
   export let sandbox_props = '';
 
   const dispatch = createEventDispatcher();
@@ -115,6 +116,8 @@
       )});
     `;
 
+    const injectedOwner = `window.context.owner = ${JSON.stringify(owner)};`;
+
     content += utils.scriptify(`
       // specific p5 because it's causing troubles.
       if (typeof p5 !== 'undefined' && p5.disableFriendlyErrors) {
@@ -124,6 +127,7 @@
 
       ${injectedProps}
       ${injectedJSON}
+      ${injectedOwner}
     `);
 
     content += code;
