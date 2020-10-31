@@ -935,7 +935,7 @@ function instance$1($$self, $$props, $$invalidate) {
 	let { owner_properties = {} } = $$props;
 	let { owner = "0x0000000000000000000000000000000000000000" } = $$props;
 	let { sandbox_props = "" } = $$props;
-	const version = "0.0.4";
+	const version = "0.0.5";
 	let proxy = null;
 
 	function getProxy() {
