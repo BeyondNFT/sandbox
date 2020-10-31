@@ -20,6 +20,13 @@
           const send_error = (message, stack) =>
             send_reply({ action: 'cmd_error', message, stack });
 
+          if (action === 'size') {
+            send_ok({
+              width: document.body.offsetWidth,
+              height: document.body.offsetHeight,
+            });
+          }
+
           if (action === 'eval') {
             try {
               const { script } = ev.data.args;
@@ -303,6 +310,21 @@
         };
       })(this);
     </script>
+    <style>
+      body,
+      html {
+        padding: 0;
+        margin: 0;
+        min-width: 100%;
+        min-height: 100%;
+      }
+
+      body {
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+    </style>
   </head>
   <body>
     <!-- NFTCODE -->

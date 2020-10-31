@@ -79,6 +79,10 @@ export default class Proxy {
     });
   }
 
+  size() {
+    return this.iframe_command('size');
+  }
+
   eval(script) {
     return this.iframe_command('eval', { script });
   }

@@ -1,49 +1,63 @@
 <style>
   body {
-    font-family: Cantarell, 'Helvetica Neue', sans-serif;
-  }
-  h1 {
-    color: red;
+    text-align: center;
   }
 </style>
-<h1>How to show values</h1>
-<dl>
-  <dt>NFT name (window.context.nft_json.name)</dt>
-  <dd class="name"></dd>
-  <dt>NFT Owner (window.context.owner)</dt>
-  <dd class="owner"></dd>
-  <dt>Owner defined color (window.context.properties.color)</dt>
-  <dd class="color"></dd>
-  <dt>Attributes:</dt>
-  <dd>
-    <ul class="attributes"></ul>
-  </dd>
-  <dt>p5js canvas:</dt>
-</dl>
 <script type="text/javascript">
-  document.querySelector('.name').innerText = window.context.nft_json.name;
-  document.querySelector('.owner').innerText = window.context.owner;
+  /*
+    window.context.nft_json contains the NFT json
+    window.context.properties contains the configured
+    properties (or default values)
 
-  const $attributes = document.querySelector('.attributes');
-  const attributes = window.context.nft_json.attributes;
-  Object.keys(attributes).forEach((attr) => {
-    const $li = document.createElement('li');
-    $li.innerHTML = `<strong>${attr}</strong>: ${attributes[attr]}`;
-    $attributes.appendChild($li);
-  });
+    Consider uploading any assets needed (image, music, video, ...)
+    to IPFS before referencing it in your code
+    (e.g using https://globalupload.io/)
+  */
 
-  document.querySelector('.color').innerText = window.context.properties.color;
+  // get data from nft_json attributes
+  // you can edit those attributes via the configuraiton
+  // icon up right
 
-  // example of p5js
   function setup() {
-    createCanvas(500, 200);
+    createCanvas(800, 800);
   }
+
+  let y_start = 100;
+  let x_start = 100;
+  let x_end = 700;
+  let spacing = 8;
+
+  let spacing1 = 13.4;
+  let spacing2 = 4;
 
   function draw() {
-    background(window.context.properties.color);
-    noLoop();
-  }
+    background(228, 216, 180);
+    stroke(39, 35, 36);
 
-  // Uncomment to throw error because accessing cookie is insecure
-  // console.log(document.cookie);
+    let y1 = y_start;
+    let y = y_start;
+    let noisevalue = sin(mouseX / 1000) + cos(mouseY / 1000);
+    let offset = 0.01;
+    while (y1 <= 700) {
+      noFill();
+      beginShape();
+
+      vertex(x_start, y1);
+
+      vertex(x_start + noise(noisevalue) * 300 + offset * 10, y);
+
+      //vertex(x_start+(sin(noisevalue)*300)+offset*10,y);
+
+      vertex(x_end, y1);
+
+      endShape();
+      if (y1 < 350) {
+        y += spacing1;
+      } else {
+        y += spacing2;
+      }
+      noisevalue += offset;
+      y1 += spacing;
+    }
+  }
 </script>
