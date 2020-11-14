@@ -255,16 +255,16 @@ Props Schema :
   "properties": {
     "required": ["data"],
     "data": {
-      "type": "object",
-      "description": "NFT's JSON Object (result of tokenURI -erc721- or uri -erc1155-)."
+      "type": ["object", "string"],
+      "description": "NFT's JSON URI or Object (result of JSON.parse of the tokenURI -erc721- or uri -erc1155-)."
     },
     "owner": {
       "type": "string",
       "description": "Address of the current token owner. Default to solidity's address(0)."
     },
     "owner_properties": {
-      "type": "object",
-      "description": "Configurable properties set by the owner (result of interactiveConfURI call)."
+      "type": ["object", "string"],
+      "description": "Owner configuration JSON URI or Object (result of JSON.parse of the interactiveConfURI contract method).""
     }
   }
 }
@@ -279,7 +279,7 @@ const sandbox = new SandBox({
   target: document.querySelector('#viewer'),
   props: {
     // data: required | Mixed
-    // This is either the tokenURI (string) or the content (object - JSON.parsed) of tokenURI
+    // This is either the tokenURI (string) or the content (object - JSON.parsed) of tokenURI|uri
     //
     // The Sandbox will look for the `interactive_nft` property in thos object
     // Else it will show the `image` property
@@ -385,8 +385,8 @@ const sandbox = new SandBox({
     owner: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B',
 
     // owner_properties: optional | Mixed
-    // owner_properties can be an URI (to the Owner configuration) or an Object (containing the owner configuration)
-    // if it's an URI it will first retrieve the data and JSON.parse it
+    // This is either the uri where to find the configuration file (string) or the content of this file (object - JSON.parsed)
+    // if it's an URI the sandbox will first retrieve the data and JSON.parse it
     //
     // object containing all the properties the Owner configured
     // this should be the content of the NFT's stored configuration file (if set by the owner and NFT is configurable)
