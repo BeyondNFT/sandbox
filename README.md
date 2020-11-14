@@ -476,15 +476,19 @@ It will also show a message to the **Viewer** and blur the Sandbox.
 
 TODO: Make this configurable with a prop `showerror`?
 
-## ERC721Configurable
+## ERC721Configurable & ERC1155configurable
 
-Basic ERC721Configurable methods
+Here are the Configurable contracts for ERC721 and ERC1155 tokens
+
+ERC721 
 
 ```solidity
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.0;
 
-abstract contract ERC721Configurable {
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+
+abstract contract ERC721Configurable is ERC721 {
     // map of tokenId => interactiveConfURI.
     mapping(uint256 => string) private _interactiveConfURIs;
 
@@ -517,5 +521,36 @@ abstract contract ERC721Configurable {
 }
 ```
 
-The ERC1155 coming soon.
-It needs an Owner to the interactiveConfURI method as it will be a conf per owner per tokenId
+ERC1155
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.6.0;
+
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+
+abstract contract ERC1155Configurable is ERC1155 {
+    // map of tokenId => interactiveConfURI.
+    mapping(uint256 => mapping(address => string)) private _interactiveConfURIs;
+
+    function _setInteractiveConfURI(
+        uint256 _tokenId,
+        address _owner,
+        string calldata _interactiveConfURI
+    ) internal virtual {
+        _interactiveConfURIs[_tokenId][_owner] = _interactiveConfURI;
+    }
+
+    /**
+     * Configuration uri for tokenId
+     */
+    function interactiveConfURI(uint256 _tokenId, address _owner)
+        public
+        virtual
+        view
+        returns (string memory)
+    {
+        return _interactiveConfURIs[_tokenId][_owner];
+    }
+}
+```
