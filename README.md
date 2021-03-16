@@ -44,7 +44,7 @@ Another example would be a Card on which the **Viewer** could click; the card wo
 
 This Sandbox aims to display the NFT code in a safe way for the **Viewer**.
 For Security reasons, the NFT Code is sandboxed in an iframe, using srcdoc.
-By default, only "allow-script", "allow-pointer-lock" and "allow-popups" are enabled. So no access to parent context or same origin stuffs (cookies, localStorage & co).
+By default, only "allow-script", "allow-pointer-lock", "allow-downloads" and "allow-popups" are enabled. So no access to parent context or same origin stuffs (cookies, localStorage & co).
 `eval` and `alert` are also disabled.
 
 - [MDN iframe (see sandbox)](https://developer.mozilla.org/fr/docs/Web/HTML/Element/iframe)

@@ -174,6 +174,21 @@
   }
 </script>
 
+<div class="beyondnft__sandbox">
+  <iframe
+    title="Sandbox"
+    bind:this={iframe}
+    sandbox={`allow-scripts allow-pointer-lock allow-popups allow-downloads ${sandbox_props}`}
+    class:greyed-out={error || pending || pending_imports}
+    srcdoc={replaceCode(srcdoc)}
+  />
+  {#if error}
+    <strong class="beyondnft__sandbox__error">
+      <em>Sorry, an error occured while executing the NFT.</em>
+    </strong>
+  {/if}
+</div>
+
 <style>
   .beyondnft__sandbox {
     background-color: white;
@@ -203,17 +218,3 @@
     padding: 5px;
   }
 </style>
-
-<div class="beyondnft__sandbox">
-  <iframe
-    title="Sandbox"
-    bind:this={iframe}
-    sandbox={`allow-scripts allow-pointer-lock allow-popups ${sandbox_props}`}
-    class:greyed-out={error || pending || pending_imports}
-    srcdoc={replaceCode(srcdoc)} />
-  {#if error}
-    <strong class="beyondnft__sandbox__error">
-      <em>Sorry, an error occured while executing the NFT.</em>
-    </strong>
-  {/if}
-</div>
