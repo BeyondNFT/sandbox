@@ -87,6 +87,17 @@ is a perfectly fine NFT code.
 
 (1) preferably hosted somewhere on a decentralized host (IPFS, Arweave or the like).
 
+##### Code Signature
+
+Recommended: some platforms have requested that the `code_uri` (or `code` if used) was *signed* (using the Wallet, i.e `web3.eth.sign(message, account)`) by the **Creator**.
+
+This, allowing **Viewer** to be able to define an "allow-list" of creators they want to execute the content automatically.
+Else, the platform will use an "Execute this interactive NFT" button, to protect user from possible non expected rendering.
+
+Therefore, if you can, before saving the JSON, ask creators to sign `code_uri` (and save the result signature in `code_uri_signature`) or `code` (and save in `code_signature`)
+
+** This is not used internally by the Sandbox, it's mostly to have a proof of who created the NFT, allowing more control for the Viewer **
+
 #### Dependencies
 
 Dependencies are declared under `interactive_nft.dependencies`.
@@ -125,6 +136,7 @@ Example:
   "image": "http://gateway.ipfs.io/Qxn...",
   "interactive_nft": {
     "code_uri": "http://gateway.ipfs.io/Qxn...",
+    "code_uri_signature": "0x0123456789abcdef...",
     "dependencies": [{
       "type": "script",
       "url": "https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.1.9/p5.min.js"
@@ -186,6 +198,7 @@ Example:
   "image": "http://gateway.ipfs.io/Qxn...",
   "interactive_nft": {
     "code_uri": "http://gateway.ipfs.io/Qxn...",
+    "code_uri_signature": "0x0123456789abcdef...",
     "properties": [{
       "name": "duration",
       "type": "number",
@@ -274,7 +287,7 @@ Props Schema :
 Full example of usage, because code is ten times better than words (You can also see [./public/index.html](./public/index.html) to see another one)
 
 ```js
-import Sandbox from 'https://cdn.jsdelivr.net/npm/@beyondnft/sandbox@0.0.5/dist/nftsandbox.es.min.js';
+import Sandbox from 'https://cdn.jsdelivr.net/npm/@beyondnft/sandbox@0.0.6/dist/nftsandbox.es.min.js';
 const sandbox = new SandBox({
   target: document.querySelector('#viewer'),
   props: {
@@ -298,14 +311,24 @@ const sandbox = new SandBox({
         // code_uri (optional) - URI where to find the code to execute
         code_uri: 'ipfs://Qx....',
 
+        // the code_uri_signature contains the signature of the URI by the Creator, proving that they
+        // are the one that created this code
+        code_uri_signature: "0x0123456789abcdef...",
+
         // code (optional) (non recommended, mostly used when creating the NFT in a codepen-like env)
         code: '<script>console.log("here");</script>',
+
+        // code_signature (optional)
+        // the code_signature is used when using `code` and not `code_uri`
+        // it contains the signature of the `code` by the Creator, proving that they
+        // are the one that created this code
+        code_signature: "0x0123456789abcdef...",
 
         // version: required
         // version of the Sandbox used to create this Interactive NFT, might be important at some point
         // if the way the sandbox works changes a lot, we will need to know what Sandbox to use to load
         // the NFT
-        version: '0.0.5',
+        version: '0.0.6',
 
         // dependencies: optional
         // Array of dependencies that the Sandbox should load before executing the NFT code.
@@ -381,7 +404,7 @@ const sandbox = new SandBox({
       }
     },
     // owner: optional (but should be set when possible - defaults to 0x0000000000000000000000000000000000000000)
-    // Address of the current owner. Accessible in the code under `window.context.owner`
+    // Address of the current owner/holder. Accessible in the code under `window.context.owner`
     owner: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B',
 
     // owner_properties: optional | Mixed
