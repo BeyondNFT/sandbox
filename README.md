@@ -287,7 +287,7 @@ Props Schema :
 Full example of usage, because code is ten times better than words (You can also see [./public/index.html](./public/index.html) to see another one)
 
 ```js
-import Sandbox from 'https://cdn.jsdelivr.net/npm/@beyondnft/sandbox@0.0.7/dist/nftsandbox.es.min.js';
+import Sandbox from 'https://cdn.jsdelivr.net/npm/@beyondnft/sandbox@0.0.8/dist/nftsandbox.es.min.js';
 const sandbox = new SandBox({
   target: document.querySelector('#viewer'),
   props: {
@@ -328,7 +328,7 @@ const sandbox = new SandBox({
         // version of the Sandbox used to create this Interactive NFT, might be important at some point
         // if the way the sandbox works changes a lot, we will need to know what Sandbox to use to load
         // the NFT
-        version: '0.0.7',
+        version: '0.0.8',
 
         // dependencies: optional
         // Array of dependencies that the Sandbox should load before executing the NFT code.
