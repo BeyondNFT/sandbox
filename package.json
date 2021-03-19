@@ -9,7 +9,7 @@
     "start": "sirv public --no-clear",
     "srcdoc": "node scripts/build-srcdoc.js",
     "version": "npm run build && git add .",
-    "release": "np --no-2fa"
+    "release": "np --no-2fa --no-tests"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^14.0.0",
