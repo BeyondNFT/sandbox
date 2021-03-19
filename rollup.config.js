@@ -76,6 +76,7 @@ export default {
     }),
     svelte({
       dev: !production,
+      emitCss: false,
     }),
     resolve({
       browser: true,
