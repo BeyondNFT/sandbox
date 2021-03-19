@@ -482,7 +482,7 @@
     	append(document.head, style);
     }
 
-    // (214:2) {#if error}
+    // (185:2) {#if error}
     function create_if_block(ctx) {
     	let strong;
 
@@ -516,7 +516,7 @@
     			t = space();
     			if (if_block) if_block.c();
     			attr(iframe_1, "title", "Sandbox");
-    			attr(iframe_1, "sandbox", iframe_1_sandbox_value = `allow-scripts allow-pointer-lock allow-popups ${/*sandbox_props*/ ctx[0]}`);
+    			attr(iframe_1, "sandbox", iframe_1_sandbox_value = `allow-scripts allow-pointer-lock allow-popups allow-downloads ${/*sandbox_props*/ ctx[0]}`);
     			attr(iframe_1, "srcdoc", iframe_1_srcdoc_value = /*replaceCode*/ ctx[4](srcdoc));
     			attr(iframe_1, "class", "svelte-uaiew6");
     			toggle_class(iframe_1, "greyed-out", /*error*/ ctx[3] || pending || /*pending_imports*/ ctx[2]);
@@ -530,7 +530,7 @@
     			if (if_block) if_block.m(div, null);
     		},
     		p(ctx, [dirty]) {
-    			if (dirty & /*sandbox_props*/ 1 && iframe_1_sandbox_value !== (iframe_1_sandbox_value = `allow-scripts allow-pointer-lock allow-popups ${/*sandbox_props*/ ctx[0]}`)) {
+    			if (dirty & /*sandbox_props*/ 1 && iframe_1_sandbox_value !== (iframe_1_sandbox_value = `allow-scripts allow-pointer-lock allow-popups allow-downloads ${/*sandbox_props*/ ctx[0]}`)) {
     				attr(iframe_1, "sandbox", iframe_1_sandbox_value);
     			}
 
@@ -941,7 +941,7 @@
     	let { owner_properties = {} } = $$props;
     	let { owner = "0x0000000000000000000000000000000000000000" } = $$props;
     	let { sandbox_props = "" } = $$props;
-    	const version = "0.0.5";
+    	const version = "0.0.6";
     	let proxy = null;
 
     	function getProxy() {
