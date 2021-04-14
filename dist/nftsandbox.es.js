@@ -1,3 +1,5 @@
+
+(function(l, r) { if (l.getElementById('livereloadscript')) return; r = l.createElement('script'); r.async = 1; r.src = '//' + (window.location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1'; r.id = 'livereloadscript'; l.getElementsByTagName('head')[0].appendChild(r) })(window.document);
 function noop() { }
 function run(fn) {
     return fn();
@@ -330,6 +332,17 @@ class SvelteComponent {
         }
     }
 }
+
+let ipfsGateway = '';
+var IPFS = {
+  init(gateway) {
+    ipfsGateway = gateway;
+  },
+
+  process(link) {
+    return link.replace('ipfs://', ipfsGateway);
+  },
+};
 
 let uid = 1;
 
@@ -798,14 +811,14 @@ function create_else_block(ctx) {
 	};
 }
 
-// (91:0) {#if code}
+// (96:0) {#if code}
 function create_if_block(ctx) {
 	let viewer;
 	let updating_proxy;
 	let current;
 
 	function viewer_proxy_binding(value) {
-		/*viewer_proxy_binding*/ ctx[8](value);
+		/*viewer_proxy_binding*/ ctx[9](value);
 	}
 
 	let viewer_props = {
@@ -822,9 +835,9 @@ function create_if_block(ctx) {
 
 	viewer = new Viewer({ props: viewer_props });
 	binding_callbacks.push(() => bind(viewer, "proxy", viewer_proxy_binding));
-	viewer.$on("loaded", /*loaded_handler*/ ctx[9]);
-	viewer.$on("error", /*error_handler*/ ctx[10]);
-	viewer.$on("warning", /*warning_handler*/ ctx[11]);
+	viewer.$on("loaded", /*loaded_handler*/ ctx[10]);
+	viewer.$on("error", /*error_handler*/ ctx[11]);
+	viewer.$on("warning", /*warning_handler*/ ctx[12]);
 
 	return {
 		c() {
@@ -941,6 +954,7 @@ function instance($$self, $$props, $$invalidate) {
 	let { owner_properties = {} } = $$props;
 	let { owner = "0x0000000000000000000000000000000000000000" } = $$props;
 	let { sandbox_props = "" } = $$props;
+	let { ipfsGateway = "https://gateway.ipfs.io/" } = $$props;
 	const version = "0.0.8";
 	let proxy = null;
 
@@ -950,7 +964,7 @@ function instance($$self, $$props, $$invalidate) {
 
 	onMount(async () => {
 		if ("string" === typeof data) {
-			await fetch(data).then(res => res.json()).then(_data => $$invalidate(0, data = _data)).catch(e => {
+			await fetch(IPFS.process(data)).then(res => res.json()).then(_data => $$invalidate(0, data = _data)).catch(e => {
 				dispatch("warning", new Error(`Error while fetching NFT's JSON at ${data}`));
 				$$invalidate(0, data = null);
 			});
@@ -966,7 +980,7 @@ function instance($$self, $$props, $$invalidate) {
 		// first fetch owner_properties if it's an URI
 		if (owner_properties) {
 			if ("string" === typeof owner_properties) {
-				await fetch(owner_properties).then(res => res.json()).then(_owner_properties => $$invalidate(2, owner_properties = _owner_properties)).catch(e => {
+				await fetch(IPFS.process(owner_properties)).then(res => res.json()).then(_owner_properties => $$invalidate(2, owner_properties = _owner_properties)).catch(e => {
 					dispatch("warning", `Error while fetching owner_properties on ${owner_properties}.
             Setting owner_properties to default.`);
 
@@ -985,7 +999,7 @@ function instance($$self, $$props, $$invalidate) {
 				// because we have to stringify it
 				$$invalidate(0, data.interactive_nft.code = null, data);
 			} else if (data.interactive_nft.code_uri) {
-				await fetch(data.interactive_nft.code_uri).then(res => res.text()).then(_code => $$invalidate(1, code = _code)).catch(e => {
+				await fetch(IPFS.process(data.interactive_nft.code_uri)).then(res => res.text()).then(_code => $$invalidate(1, code = _code)).catch(e => {
 					dispatch("Error", new Error(`Error while fetching ${data.interactive_nft.code_uri}`));
 				});
 			}
@@ -1019,6 +1033,13 @@ function instance($$self, $$props, $$invalidate) {
 		if ("owner_properties" in $$props) $$invalidate(2, owner_properties = $$props.owner_properties);
 		if ("owner" in $$props) $$invalidate(3, owner = $$props.owner);
 		if ("sandbox_props" in $$props) $$invalidate(4, sandbox_props = $$props.sandbox_props);
+		if ("ipfsGateway" in $$props) $$invalidate(6, ipfsGateway = $$props.ipfsGateway);
+	};
+
+	$$self.$$.update = () => {
+		if ($$self.$$.dirty & /*ipfsGateway*/ 64) {
+			IPFS.init(ipfsGateway);
+		}
 	};
 
 	return [
@@ -1028,6 +1049,7 @@ function instance($$self, $$props, $$invalidate) {
 		owner,
 		sandbox_props,
 		proxy,
+		ipfsGateway,
 		version,
 		getProxy,
 		viewer_proxy_binding,
@@ -1047,17 +1069,18 @@ class Sandbox extends SvelteComponent {
 			owner_properties: 2,
 			owner: 3,
 			sandbox_props: 4,
-			version: 6,
-			getProxy: 7
+			ipfsGateway: 6,
+			version: 7,
+			getProxy: 8
 		});
 	}
 
 	get version() {
-		return this.$$.ctx[6];
+		return this.$$.ctx[7];
 	}
 
 	get getProxy() {
-		return this.$$.ctx[7];
+		return this.$$.ctx[8];
 	}
 }
 

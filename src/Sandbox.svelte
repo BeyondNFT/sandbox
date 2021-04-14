@@ -1,5 +1,6 @@
 <script>
   import { createEventDispatcher, onMount } from 'svelte';
+  import IPFS from './conf/link';
 
   import Viewer from './Output/Viewer.svelte';
 
@@ -10,9 +11,13 @@
   export let owner_properties = {};
   export let owner = '0x0000000000000000000000000000000000000000';
   export let sandbox_props = '';
+  export let ipfsGateway = 'https://gateway.ipfs.io/';
+
   export const version = process.env.npm_package_version;
 
   let proxy = null;
+
+  $: IPFS.init(ipfsGateway);
 
   export function getProxy() {
     return proxy;
@@ -20,7 +25,7 @@
 
   onMount(async () => {
     if ('string' === typeof data) {
-      await fetch(data)
+      await fetch(IPFS.process(data))
         .then((res) => res.json())
         .then((_data) => (data = _data))
         .catch((e) => {
@@ -44,7 +49,7 @@
     // first fetch owner_properties if it's an URI
     if (owner_properties) {
       if ('string' === typeof owner_properties) {
-        await fetch(owner_properties)
+        await fetch(IPFS.process(owner_properties))
           .then((res) => res.json())
           .then((_owner_properties) => (owner_properties = _owner_properties))
           .catch((e) => {
@@ -67,7 +72,7 @@
         // because we have to stringify it
         data.interactive_nft.code = null;
       } else if (data.interactive_nft.code_uri) {
-        await fetch(data.interactive_nft.code_uri)
+        await fetch(IPFS.process(data.interactive_nft.code_uri))
           .then((res) => res.text())
           .then((_code) => (code = _code))
           .catch((e) => {
@@ -98,5 +103,6 @@
     bind:proxy
     on:loaded
     on:error
-    on:warning />
+    on:warning
+  />
 {:else}Loading...{/if}

@@ -277,7 +277,11 @@ Props Schema :
     },
     "owner_properties": {
       "type": ["object", "string"],
-      "description": "Owner configuration JSON URI or Object (result of JSON.parse of the interactiveConfURI contract method).""
+      "description": "Owner configuration JSON URI or Object (result of JSON.parse of the interactiveConfURI contract method)."
+    },
+    "ipfsGateway": {
+      "type": ["string"],
+      "description": "Gateway used to replace ipfs:// links in the NFT Metadata (i.e: 'https://gateway.ipfs.io/')."
     }
   }
 }
@@ -423,7 +427,12 @@ const sandbox = new SandBox({
         name: "Doe",
         surname: "Jane"
       }
-    }
+    },
+
+    // ipfsGateway: optional (Default: "https://gateway.ipfs.io")
+    // Some nfts have ipfs links as image, code etc...
+    // The Sandbox will replace "ipfs://" in all links by the value of this property before loading those
+    ipfsGateway: "https://gateway.ipfs.io",
   }
 });
 ```
