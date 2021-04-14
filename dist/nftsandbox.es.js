@@ -1,5 +1,3 @@
-
-(function(l, r) { if (l.getElementById('livereloadscript')) return; r = l.createElement('script'); r.async = 1; r.src = '//' + (window.location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1'; r.id = 'livereloadscript'; l.getElementsByTagName('head')[0].appendChild(r) })(window.document);
 function noop() { }
 function run(fn) {
     return fn();
@@ -955,7 +953,7 @@ function instance($$self, $$props, $$invalidate) {
 	let { owner = "0x0000000000000000000000000000000000000000" } = $$props;
 	let { sandbox_props = "" } = $$props;
 	let { ipfsGateway = "https://gateway.ipfs.io/" } = $$props;
-	const version = "0.0.8";
+	const version = "0.0.9";
 	let proxy = null;
 
 	function getProxy() {
