@@ -1,5 +1,6 @@
 import mitt from 'mitt';
 import IPFS from '../conf/link';
+import fetch from 'cross-fetch';
 
 import * as utils from './utils.js';
 import srcdoc from './srcdoc/index.js';
