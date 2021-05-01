@@ -1,5 +1,3 @@
-
-(function(l, r) { if (l.getElementById('livereloadscript')) return; r = l.createElement('script'); r.async = 1; r.src = '//' + (window.location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1'; r.id = 'livereloadscript'; l.getElementsByTagName('head')[0].appendChild(r) })(window.document);
 function mitt(n){return {all:n=n||new Map,on:function(t,e){var i=n.get(t);i&&i.push(e)||n.set(t,[e]);},off:function(t,e){var i=n.get(t);i&&i.splice(i.indexOf(e)>>>0,1);},emit:function(t,e){(n.get(t)||[]).slice().map(function(n){n(e);}),(n.get("*")||[]).slice().map(function(n){n(t,e);});}}}
 
 let ipfsGateway = '';
@@ -1039,7 +1037,7 @@ function instance($$self, $$props, $$invalidate) {
 	let { owner = "0x0000000000000000000000000000000000000000" } = $$props;
 	let { sandbox_props = "" } = $$props;
 	let { ipfsGateway = "https://gateway.ipfs.io/" } = $$props;
-	const version = "0.0.9";
+	const version = "0.0.10";
 	let proxy = null;
 	let ready = false;
 
