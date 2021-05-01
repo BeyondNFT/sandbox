@@ -2,11 +2,10 @@
   import { createEventDispatcher, onMount } from 'svelte';
 
   import Proxy from './Proxy';
-  import Builder from '../Builder';
 
   export let proxy;
 
-  export let builder;
+  export let src;
 
   export let sandbox_props = '';
 
@@ -115,7 +114,7 @@
     bind:this={iframe}
     sandbox={`allow-scripts allow-pointer-lock allow-popups allow-downloads ${sandbox_props}`}
     class:greyed-out={error || pending || pending_imports}
-    srcdoc={builder.build()}
+    srcdoc={src}
   />
   {#if error}
     <strong class="beyondnft__sandbox__error">

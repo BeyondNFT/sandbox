@@ -1,6 +1,5 @@
 import mitt from 'mitt';
 import IPFS from '../conf/link';
-import fetch from 'cross-fetch';
 
 import * as utils from './utils.js';
 import srcdoc from './srcdoc/index.js';
@@ -13,22 +12,27 @@ export default {
   code: '',
   owner_properties: {},
   owner: '',
-  async init(json, code, owner_properties, owner, ipfsGateway) {
+  async init(json, code, owner_properties, owner, ipfsGateway, fetch) {
     if (ipfsGateway) {
       IPFS.init(ipfsGateway);
     }
 
     if ('string' === typeof json) {
-      await fetch(IPFS.process(json))
-        .then((res) => res.json())
-        .then((_data) => (json = _data))
-        .catch((e) => {
-          emitter.emit(
-            'warning',
-            new Error(`Error while fetching NFT's JSON at ${json}`),
-          );
-          json = null;
-        });
+      try {
+        json = JSON.parse(json);
+      } catch (e) {
+        json = IPFS.process(json);
+        await fetch(json)
+          .then((res) => res.json())
+          .then((_data) => (json = _data))
+          .catch((e) => {
+            emitter.emit(
+              'warning',
+              new Error(`Error while fetching NFT's JSON at ${json}`),
+            );
+            json = null;
+          });
+      }
     }
 
     if (!json) {

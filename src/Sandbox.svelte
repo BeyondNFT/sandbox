@@ -30,14 +30,14 @@
   Builder.emitter.on('error', (e) => dispatch('error', e.detail));
 
   onMount(async () => {
-    await Builder.init(data, code, owner_properties, owner, ipfsGateway);
+    await Builder.init(data, code, owner_properties, owner, ipfsGateway, fetch);
     ready = true;
   });
 </script>
 
 {#if ready}
   <Viewer
-    builder={Builder}
+    src={Builder.build()}
     {sandbox_props}
     bind:proxy
     on:loaded

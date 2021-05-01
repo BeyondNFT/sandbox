@@ -56,22 +56,27 @@
     code: '',
     owner_properties: {},
     owner: '',
-    async init(json, code, owner_properties, owner, ipfsGateway) {
+    async init(json, code, owner_properties, owner, ipfsGateway, fetch) {
       if (ipfsGateway) {
         IPFS.init(ipfsGateway);
       }
 
       if ('string' === typeof json) {
-        await fetch(IPFS.process(json))
-          .then((res) => res.json())
-          .then((_data) => (json = _data))
-          .catch((e) => {
-            emitter.emit(
-              'warning',
-              new Error(`Error while fetching NFT's JSON at ${json}`),
-            );
-            json = null;
-          });
+        try {
+          json = JSON.parse(json);
+        } catch (e) {
+          json = IPFS.process(json);
+          await fetch(json)
+            .then((res) => res.json())
+            .then((_data) => (json = _data))
+            .catch((e) => {
+              emitter.emit(
+                'warning',
+                new Error(`Error while fetching NFT's JSON at ${json}`),
+              );
+              json = null;
+            });
+        }
       }
 
       if (!json) {
@@ -661,7 +666,7 @@
   	append(document.head, style);
   }
 
-  // (120:2) {#if error}
+  // (119:2) {#if error}
   function create_if_block$1(ctx) {
   	let strong;
 
@@ -684,7 +689,6 @@
   	let div;
   	let iframe_1;
   	let iframe_1_sandbox_value;
-  	let iframe_1_srcdoc_value;
   	let t;
   	let if_block = /*error*/ ctx[4] && create_if_block$1();
 
@@ -696,7 +700,7 @@
   			if (if_block) if_block.c();
   			attr(iframe_1, "title", "Sandbox");
   			attr(iframe_1, "sandbox", iframe_1_sandbox_value = `allow-scripts allow-pointer-lock allow-popups allow-downloads ${/*sandbox_props*/ ctx[1]}`);
-  			attr(iframe_1, "srcdoc", iframe_1_srcdoc_value = /*builder*/ ctx[0].build());
+  			attr(iframe_1, "srcdoc", /*src*/ ctx[0]);
   			attr(iframe_1, "class", "svelte-uaiew6");
   			toggle_class(iframe_1, "greyed-out", /*error*/ ctx[4] || pending || /*pending_imports*/ ctx[3]);
   			attr(div, "class", "beyondnft__sandbox svelte-uaiew6");
@@ -713,8 +717,8 @@
   				attr(iframe_1, "sandbox", iframe_1_sandbox_value);
   			}
 
-  			if (dirty & /*builder*/ 1 && iframe_1_srcdoc_value !== (iframe_1_srcdoc_value = /*builder*/ ctx[0].build())) {
-  				attr(iframe_1, "srcdoc", iframe_1_srcdoc_value);
+  			if (dirty & /*src*/ 1) {
+  				attr(iframe_1, "srcdoc", /*src*/ ctx[0]);
   			}
 
   			if (dirty & /*error, pending, pending_imports*/ 24) {
@@ -746,7 +750,7 @@
 
   function instance$1($$self, $$props, $$invalidate) {
   	let { proxy } = $$props;
-  	let { builder } = $$props;
+  	let { src } = $$props;
   	let { sandbox_props = "" } = $$props;
   	const dispatch = createEventDispatcher();
   	let iframe;
@@ -858,26 +862,18 @@
 
   	$$self.$$set = $$props => {
   		if ("proxy" in $$props) $$invalidate(5, proxy = $$props.proxy);
-  		if ("builder" in $$props) $$invalidate(0, builder = $$props.builder);
+  		if ("src" in $$props) $$invalidate(0, src = $$props.src);
   		if ("sandbox_props" in $$props) $$invalidate(1, sandbox_props = $$props.sandbox_props);
   	};
 
-  	return [
-  		builder,
-  		sandbox_props,
-  		iframe,
-  		pending_imports,
-  		error,
-  		proxy,
-  		iframe_1_binding
-  	];
+  	return [src, sandbox_props, iframe, pending_imports, error, proxy, iframe_1_binding];
   }
 
   class Viewer extends SvelteComponent {
   	constructor(options) {
   		super();
   		if (!document.getElementById("svelte-uaiew6-style")) add_css();
-  		init(this, options, instance$1, create_fragment$1, safe_not_equal, { proxy: 5, builder: 0, sandbox_props: 1 });
+  		init(this, options, instance$1, create_fragment$1, safe_not_equal, { proxy: 5, src: 0, sandbox_props: 1 });
   	}
   }
 
@@ -913,7 +909,7 @@
   	}
 
   	let viewer_props = {
-  		builder: Builder,
+  		src: Builder.build(),
   		sandbox_props: /*sandbox_props*/ ctx[0]
   	};
 
@@ -1055,7 +1051,7 @@
   	Builder.emitter.on("error", e => dispatch("error", e.detail));
 
   	onMount(async () => {
-  		await Builder.init(data, code, owner_properties, owner, ipfsGateway);
+  		await Builder.init(data, code, owner_properties, owner, ipfsGateway, fetch);
   		$$invalidate(2, ready = true);
   	});
 
