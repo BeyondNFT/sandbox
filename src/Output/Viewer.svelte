@@ -2,14 +2,12 @@
   import { createEventDispatcher, onMount } from 'svelte';
 
   import Proxy from './Proxy';
-  import srcdoc from './srcdoc/index.js';
-  import * as utils from './utils.js';
+  import Builder from '../Builder';
 
-  export let code = '';
   export let proxy;
-  export let json;
-  export let owner_properties;
-  export let owner;
+
+  export let builder;
+
   export let sandbox_props = '';
 
   const dispatch = createEventDispatcher();
@@ -72,69 +70,6 @@
     };
   });
 
-  function makeDependencies() {
-    if (!json.interactive_nft) {
-      return '';
-    }
-    return utils.makeDependencies(json.interactive_nft.dependencies);
-  }
-
-  function loadProps() {
-    const props = {};
-    if (json.interactive_nft) {
-      if (Array.isArray(json.interactive_nft.properties)) {
-        let overrider = {};
-        if (owner_properties && 'object' === typeof owner_properties) {
-          overrider = owner_properties;
-        }
-
-        // no Object.assign because we only want declared props to be set
-        for (const prop of json.interactive_nft.properties) {
-          props[prop.name] = prop.value;
-          if (undefined !== overrider[prop.name]) {
-            props[prop.name] = overrider[prop.name];
-          }
-        }
-      }
-    }
-
-    return props;
-  }
-
-  function replaceCode(srcdoc) {
-    let content = makeDependencies();
-
-    const props = loadProps();
-
-    const injectedProps = `
-      window.context.properties = JSON.parse('${JSON.stringify(props)}');
-    `;
-
-    const injectedJSON = `
-      window.context.nft_json = JSON.parse(${JSON.stringify(
-        JSON.stringify(json)
-      )});
-    `;
-
-    const injectedOwner = `window.context.owner = ${JSON.stringify(owner)};`;
-
-    content += utils.scriptify(`
-      // specific p5 because it's causing troubles.
-      if (typeof p5 !== 'undefined' && p5.disableFriendlyErrors) {
-        p5.disableFriendlyErrors = true;
-        new p5();
-      }
-
-      ${injectedProps}
-      ${injectedJSON}
-      ${injectedOwner}
-    `);
-
-    content += code;
-
-    return srcdoc.replace('<!-- NFTCODE -->', content);
-  }
-
   function show_error(e) {
     error = e;
     dispatch('error', e);
@@ -180,7 +115,7 @@
     bind:this={iframe}
     sandbox={`allow-scripts allow-pointer-lock allow-popups allow-downloads ${sandbox_props}`}
     class:greyed-out={error || pending || pending_imports}
-    srcdoc={replaceCode(srcdoc)}
+    srcdoc={builder.build()}
   />
   {#if error}
     <strong class="beyondnft__sandbox__error">

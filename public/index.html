@@ -21,6 +21,10 @@
     <script type="module">
       import NftSandbox from './dist/nftsandbox.es.js';
 
+      // you can also directly access the builder with
+      // console.log(NftSandbox.Builder);
+      // and pass the properties to it, without the need of the Sandbox
+
       document.cookie = 'name=sandbox';
       const sandbox = new NftSandbox({
         target: document.querySelector('.app'),
@@ -32,7 +36,7 @@
           // uri where to fetch the owner properties
           // result of interactiveConfURI call on the contract
           owner_properties: './owner_properties.json',
-          ipfsGateway: "https://gateway.pinata.cloud/"
+          ipfsGateway: 'https://gateway.pinata.cloud/',
         },
       });
 
