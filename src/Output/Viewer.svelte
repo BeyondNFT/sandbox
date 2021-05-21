@@ -113,6 +113,7 @@
     title="Sandbox"
     bind:this={iframe}
     sandbox={`allow-scripts allow-pointer-lock allow-popups allow-downloads ${sandbox_props}`}
+    allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; camera; microphone; xr-spatial-tracking;"
     class:greyed-out={error || pending || pending_imports}
     srcdoc={src}
   />

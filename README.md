@@ -332,7 +332,7 @@ const sandbox = new SandBox({
         // version of the Sandbox used to create this Interactive NFT, might be important at some point
         // if the way the sandbox works changes a lot, we will need to know what Sandbox to use to load
         // the NFT
-        version: '0.0.9',
+        version: '0.0.13',
 
         // dependencies: optional
         // Array of dependencies that the Sandbox should load before executing the NFT code.
