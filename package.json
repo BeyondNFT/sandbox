@@ -1,6 +1,6 @@
 {
   "name": "@beyondnft/sandbox",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "module": "dist/nftsandbox.es.min.js",
   "main": "dist/nftsandbox.umd.min.js",
   "scripts": {
