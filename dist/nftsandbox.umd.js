@@ -700,7 +700,7 @@
   			if (if_block) if_block.c();
   			attr(iframe_1, "title", "Sandbox");
   			attr(iframe_1, "sandbox", iframe_1_sandbox_value = `allow-scripts allow-pointer-lock allow-popups allow-downloads ${/*sandbox_props*/ ctx[1]}`);
-  			attr(iframe_1, "allow", "accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; camera; microphone; xr-spatial-tracking;");
+  			attr(iframe_1, "allow", "accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; camera; microphone; xr-spatial-tracking; geolocation; fullscreen; magnetometer; midi; vr;");
   			attr(iframe_1, "srcdoc", /*src*/ ctx[0]);
   			attr(iframe_1, "class", "svelte-uaiew6");
   			toggle_class(iframe_1, "greyed-out", /*error*/ ctx[4] || pending || /*pending_imports*/ ctx[3]);
@@ -1040,7 +1040,7 @@
   	let { owner = "0x0000000000000000000000000000000000000000" } = $$props;
   	let { sandbox_props = "" } = $$props;
   	let { ipfsGateway = "https://gateway.ipfs.io/" } = $$props;
-  	const version = "0.0.13";
+  	const version = "0.0.14";
   	let proxy = null;
   	let ready = false;
 
