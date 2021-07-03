@@ -138,20 +138,6 @@ export default {
 
     const props = this.loadProps();
 
-    const injectedProps = `
-		window.context.properties = JSON.parse('${JSON.stringify(props)}');
-	`;
-
-    const injectedJSON = `
-		window.context.nft_json = JSON.parse(${JSON.stringify(
-      JSON.stringify(this.json),
-    )});
-	`;
-
-    const injectedOwner = `window.context.owner = ${JSON.stringify(
-      this.owner,
-    )};`;
-
     content += utils.scriptify(`
 		// specific p5 because it's causing troubles.
 		if (typeof p5 !== 'undefined' && p5.disableFriendlyErrors) {
@@ -159,9 +145,18 @@ export default {
 			new p5();
 		}
 
-		${injectedProps}
-		${injectedJSON}
-		${injectedOwner}
+    window.context = {
+      get owner() {
+        let owner = owner;
+        if (window.location?.search) {
+          const params =  new URLSearchParams(window.location.search);
+          owner = params.get('owner') || owner;
+        }
+        return owner;
+      },
+      nft_json: JSON.parse(${JSON.stringify(JSON.stringify(this.json))}),
+      properties: JSON.parse('${JSON.stringify(props)}'),
+    };
 	`);
 
     content += this.code;

@@ -1,3 +1,5 @@
+
+(function(l, r) { if (l.getElementById('livereloadscript')) return; r = l.createElement('script'); r.async = 1; r.src = '//' + (window.location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1'; r.id = 'livereloadscript'; l.getElementsByTagName('head')[0].appendChild(r) })(window.document);
 function mitt(n){return {all:n=n||new Map,on:function(t,e){var i=n.get(t);i&&i.push(e)||n.set(t,[e]);},off:function(t,e){var i=n.get(t);i&&i.splice(i.indexOf(e)>>>0,1);},emit:function(t,e){(n.get(t)||[]).slice().map(function(n){n(e);}),(n.get("*")||[]).slice().map(function(n){n(t,e);});}}}
 
 let ipfsGateway = '';
@@ -176,20 +178,6 @@ var Builder = {
 
     const props = this.loadProps();
 
-    const injectedProps = `
-		window.context.properties = JSON.parse('${JSON.stringify(props)}');
-	`;
-
-    const injectedJSON = `
-		window.context.nft_json = JSON.parse(${JSON.stringify(
-      JSON.stringify(this.json),
-    )});
-	`;
-
-    const injectedOwner = `window.context.owner = ${JSON.stringify(
-      this.owner,
-    )};`;
-
     content += scriptify(`
 		// specific p5 because it's causing troubles.
 		if (typeof p5 !== 'undefined' && p5.disableFriendlyErrors) {
@@ -197,9 +185,18 @@ var Builder = {
 			new p5();
 		}
 
-		${injectedProps}
-		${injectedJSON}
-		${injectedOwner}
+    window.context = {
+      get owner() {
+        let owner = owner;
+        if (window.location?.search) {
+          const params =  new URLSearchParams(window.location.search);
+          owner = params.get('owner') || owner;
+        }
+        return owner;
+      },
+      nft_json: JSON.parse(${JSON.stringify(JSON.stringify(this.json))}),
+      properties: JSON.parse('${JSON.stringify(props)}'),
+    };
 	`);
 
     content += this.code;
