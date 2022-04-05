@@ -1031,7 +1031,7 @@ function instance($$self, $$props, $$invalidate) {
 	let { owner = "0x0000000000000000000000000000000000000000" } = $$props;
 	let { sandbox_props = "" } = $$props;
 	let { ipfsGateway = "https://gateway.ipfs.io/ipfs/" } = $$props;
-	const version = "0.0.15";
+	const version = "0.0.16";
 	let proxy = null;
 	let ready = false;
 
