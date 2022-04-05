@@ -7,7 +7,9 @@ var IPFS = {
   },
 
   process(link) {
-    return link.replace('ipfs://', ipfsGateway);
+    return link
+      .replace('ipfs://ipfs/', 'ipfs://')
+      .replace('ipfs://', ipfsGateway);
   },
 };
 
@@ -1028,7 +1030,7 @@ function instance($$self, $$props, $$invalidate) {
 	let { owner_properties = {} } = $$props;
 	let { owner = "0x0000000000000000000000000000000000000000" } = $$props;
 	let { sandbox_props = "" } = $$props;
-	let { ipfsGateway = "https://gateway.ipfs.io/" } = $$props;
+	let { ipfsGateway = "https://gateway.ipfs.io/ipfs/" } = $$props;
 	const version = "0.0.15";
 	let proxy = null;
 	let ready = false;

@@ -5,6 +5,8 @@ export default {
   },
 
   process(link) {
-    return link.replace('ipfs://', ipfsGateway);
+    return link
+      .replace('ipfs://ipfs/', 'ipfs://')
+      .replace('ipfs://', ipfsGateway);
   },
 };
